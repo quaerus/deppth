@@ -1,0 +1,1830 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.1" />
+<title>deppth.sggpio API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>deppth.sggpio</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import io
+import os
+
+from .compression import get_chunkprocessor, get_chunkprocessor_by_name
+from .utils import IOExtensionMixin as _IOExtensionMixin, FileIO as _FileIO, BytesIO as _BytesIO
+from .entries import get_entry
+
+#region Constants
+CHUNK_SIZE = 0x2000000              # The size of uncompressed chunks in packages
+
+PACKAGE_VERSION_HADES = 7
+PACKAGE_VERSION_TRANSISTOR = 5
+PACKAGE_VERSION_PYRE = 5
+
+ENTRY_CODE_END_OF_CHUNK = b&#39;\xBE&#39;
+ENTRY_CODE_END_OF_FILE = b&#39;\xFF&#39;
+#endregion
+
+class PackageIO(io.IOBase, _IOExtensionMixin):
+  &#34;&#34;&#34;Base class for reading to and writing from SuperGiant Games asset packages.
+  
+  You almost never should instantiate this directly nor any subclass, but
+  instead should use the open_package function, which will return the correct
+  subclass.
+
+  This class implements the IOBase interface, so typical IO patterns should
+  readily be familiar. As such, documentation will be omitted for members
+  that behave like any standard IO object.
+  &#34;&#34;&#34;
+
+  #region Basic Functionality
+  def __init__(self, name, mode=&#39;r&#39;, closefd=True, opener=None, compressor=&#39;uncompressed&#39;, version=PACKAGE_VERSION_HADES, is_manifest=False):
+    &#34;&#34;&#34;Creates an instance of PackageIO, opening a stream to read the package.
+    
+    The name, mode, closefd, and opener properties match those from io.open.
+
+    The compressor property indicates the type of compression used in the package.
+    Because this class cannot read or write data, the user must specify. The possible
+    values are &#39;uncompressed&#39;, &#39;lz4&#39; and &#39;lzf&#39;. LZ4 and LZF compression require the
+    lz4 and lzf modules, respectively.
+
+    The version property indicates the version number of the package. The PACKAGE_VERSION_*
+    constants provide the correct values for this property
+    &#34;&#34;&#34;
+    if not mode in [&#39;r&#39;, &#39;w&#39;, &#39;x&#39;]:
+      raise ValueError(f&#39;invalid mode: {mode}. Only modes r, w, and x are supported&#39;)
+    self.mode = mode + &#39;b&#39;
+    self.raw = _FileIO(name, mode, closefd, opener)
+    self.virtual_pos = [0, 0]   # Chunk num and position within chunk
+    self.chunklocs = [4]
+    self.compressor = compressor
+    self.chunkprocessor = None
+    self.version = version
+    self.is_manifest = is_manifest
+
+  def close(self):
+    if self.raw is not None and not self.closed:
+      try:
+        self.flush()
+      finally:
+        self.raw.close()
+
+  @property
+  def closed(self):
+    return self.raw.closed
+
+  def fileno(self):
+    return self.raw.fileno()
+
+  def flush(self):
+    if self.closed:
+      raise ValueError(&#34;flush on closed file&#34;)
+    self.raw.flush()
+
+  def _get_chunkprocessor(self):
+    if not self.chunkprocessor:
+      if len(self.compressor) == 1:
+        self.chunkprocessor = get_chunkprocessor(self.compressor)
+      else:
+        self.chunkprocessor = get_chunkprocessor_by_name(self.compressor)
+    return self.chunkprocessor
+            
+  def isatty(self):
+    return self.raw.fileno()
+
+  def is_eof(self):
+    &#34;&#34;&#34;Returns whether the underlying file stream is at EOF.
+
+    This is not necessarily whether the reader or writer itself is at EOF.&#34;&#34;&#34;
+    return self.raw.is_eof()
+  #endregion
+
+  #region Read Access
+  def read(self, size):
+    &#34;&#34;&#34;Reads the next specified bytes of data from the package.
+    
+    This will just return raw bytes from the underlying file stream without
+    decompression.
+    &#34;&#34;&#34;
+    return self.raw.read(size)
+
+  def readable(self):
+    return self.raw.readable()
+
+  def read_entry(self):
+    &#34;&#34;&#34;Reads the next entry from the package.
+
+    This function is meant to be called many times in succession to
+    read the entire contents of the package, until the end is reached,
+    at which point None is returned.
+
+    This function assumes the stream is positioned to read the next
+    entry. Adjusting the position of the stream manually will likely
+    make this function unusable. You have been warned.
+
+    The object returned will either be None or an instance of a subclass
+    of EntryBase.
+    &#34;&#34;&#34;
+    raise NotImplementedError(&#34;Cannot read entries from PackageIOBase&#34;)
+  #endregion
+
+  #region Write Access
+  def write(self, b):
+    &#34;&#34;&#34;Writes the specified bytes to the package file.
+    
+    This function is provided in fulfillment of the IOBase interface,
+    and is implemented for convenience within this module. Consumers
+    of this module should almost certainly not call this function.
+    &#34;&#34;&#34;
+    raise NotImplementedError()
+
+  def writable(self):
+    return self.raw.writable()
+  #endregion
+
+  #region Random Access
+  def seek(self, pos, whence=0):
+    &#34;&#34;&#34;Change stream position.
+
+    Functions similar to IOBase.seek, but currently only os.SEEK_SET is
+    supported for whence.
+
+    Returns the stream position, which is a virtual position in a hypothetical
+    uncompressed version of the stream.
+    &#34;&#34;&#34;
+    if not self.seekable():
+      return OSError(&#34;stream not seekable&#34;)
+
+    if whence != os.SEEK_SET:
+      raise NotImplementedError(&#34;Only os.SEEK_SET is supported for now&#34;)
+    
+    old_virtual_pos = self.virtual_pos.copy()
+
+    # Figure out which chunk to go to.
+    new_virtual_pos = [pos // CHUNK_SIZE, pos % CHUNK_SIZE]
+
+    # If we need to move to a new chunk, do that.
+    if new_virtual_pos[0] != self.virtual_pos[0]:
+      self._seek_chunk(new_virtual_pos[0])
+
+    # Set the virtual position within this chunk to the new one.
+    # The reason why it&#39;s virtual is we aren&#39;t actually reading the
+    # compressed data to navigate within a decompressed chunk.
+    self.virtual_pos[1] = new_virtual_pos[1]
+
+    # Execute &#34;after seek&#34; code to handle potentially stale buffers.
+    self._after_seek(old_virtual_pos, new_virtual_pos)
+
+    # Return the new stream position.
+    return self.tell()
+
+  def tell(self):
+    &#34;&#34;&#34;Returns the stream position.
+    
+    For this stream, tell functions a bit differently due to the way the
+    data is being read and decompressed on the fly. The stream position
+    is more of a &#34;virtual&#34; concept. This function will return what the
+    stream position *would* be if the contents were fully decompressed.
+
+    The underlying FileIO object&#39;s tell function can be used to return
+    the position of the stream accessing the compressed data.
+    &#34;&#34;&#34;
+    return self.virtual_pos[0]*CHUNK_SIZE + self.virtual_pos[1]
+
+  def truncate(self, pos=None):
+    &#34;&#34;&#34;This action is not supported at this time, since it&#39;s not clear how it should work.&#34;&#34;&#34;
+    raise NotImplementedError(&#34;truncate for PackageIO streams is not supported&#34;)
+      
+  def _skip_chunk(self):
+    &#34;&#34;&#34;Skips the next chunk in the stream. Returns whether there actually was a chunk.&#34;&#34;&#34;
+    # If there&#39;s no data left in the file, there&#39;s no more chunks to load.
+    if self.raw.is_eof():
+        return False
+
+    # The first chunk actually includes the header, so remove it if we&#39;re at the start of the file.
+    pos = self.raw.tell()   # This should be 4 exactly for the first chunk
+    chunksize = CHUNK_SIZE - pos if pos &lt;= 4 else CHUNK_SIZE
+
+    # Skip the next chunk from the file using the correct chunk processor
+    self._get_chunkprocessor().skip_chunk(self.raw, chunksize)
+    self.virtual_pos[0] += 1
+    
+    # If we haven&#39;t already, add a chunk marker indicating where the next chunk begins
+    if self.virtual_pos[0] &gt;= len(self.chunklocs):
+      self.chunklocs.append(self.raw.tell())
+
+    return True
+
+  def _seek_chunk(self, n):
+    &#34;&#34;&#34;Seeks to the start of the chunk n (0-indexed) in the package.&#34;&#34;&#34;
+    if n &lt; len(self.chunklocs):
+        # We already know where this is! Just seek to that spot.
+        self.raw.seek(self.chunklocs[n], os.SEEK_SET)
+        self.virtual_pos[0] = n
+    else:
+        # We don&#39;t know where this is! Go to the start of the last chunk we know
+        # about and skip chunks until we get there!
+        self.raw.seek(self.chunklocs[-1], os.SEEK_SET)
+        self.virtual_pos[0] = len(self.chunklocs) - 1
+        while self.virtual_pos[0] &lt; n:
+            self._skip_chunk()
+
+  def _after_seek(self, old_pos, new_pos):
+    &#34;&#34;&#34;Executed immediately after seek is called. Use this to, e.g., handle stale buffers.&#34;&#34;&#34;
+    pass
+
+  #endregion
+
+
+class PackageReader(PackageIO):
+  #region Constructor
+  def __init__(self, name, closefd=True, opener=None, is_manifest=False):
+    super().__init__(name, &#39;r&#39;, closefd, opener, is_manifest=is_manifest)
+
+    # Initialize the read buffer
+    self._reset_read_buf()
+
+    # Read the header, which should set the compressor and version correctly
+    self._read_header()
+  #endregion
+
+  #region Basic Functionality Overrides
+  def is_eof(self):
+    # if the file is eof and there&#39;s nothing left in the read buffer, we&#39;re EOF
+    return self.raw.is_eof() and self._read_pos &gt;= len(self._read_buf)
+  #endregion
+
+  #region Read Access
+  def read(self, size):
+    &#34;&#34;&#34;Reads the next specified bytes of data from the package.
+    
+    This function differs from standard IO implementations in that
+    the size parameter is (currently) mandatory, and None is not
+    a legal value.
+
+    Because packages are usually stored compressed, and this class
+    will invoke decompression on chunks of data as needed, it&#39;s
+    worth clarifying that this function will return the specified
+    number of bytes of uncompressed data. The actual amount of data
+    read could differ for a number of different reasons, not the least
+    of which being the fact that this stream utilizes a buffer.
+    &#34;&#34;&#34;
+
+    # How many bytes are left in the current chunk?
+    num_bytes_to_read = len(self._read_buf) - self._read_pos
+
+    # If we can satisfy the read just with the current chunk, great!
+    if size &lt;= num_bytes_to_read:
+      return self._read_from_buffer(size)
+
+    # Otherwise, we&#39;ll need to load at least one more chunk 
+    # to load the requested amount of bytes
+    data = [self._read_buf[self._read_pos:]]
+    num_bytes_read = num_bytes_to_read
+
+    # Load chunks of additional data until we have enough bytes to satisfy the request
+    while True:
+      if self._read_chunk() is not None:
+        if len(self._read_buf) &lt; size - num_bytes_read:
+          # Read in this entire chunk, and keep going
+          num_bytes_read += len(self._read_buf)
+          data.append(self._read_buf)
+        else:
+          # Read in enough data to satisfy the request, and stop
+          data.append(self._read_from_buffer(size - num_bytes_read))
+          break
+      else:
+        break   # Out of data to load, so this is it!
+
+    return b&#34;&#34;.join(data)
+
+  def read_entry(self):
+    &#34;&#34;&#34;Reads the next entry from the package.
+
+    This function is meant to be called many times in succession to
+    read the entire contents of the package, until the end is reached,
+    at which point None is returned.
+
+    This function assumes the stream is positioned to read the next
+    entry. Adjusting the position of the stream manually will likely
+    make this function unusable. You have been warned.
+
+    The object returned will either be None or an instance of a subclass
+    of EntryBase.
+    &#34;&#34;&#34;
+    if self.is_eof():
+      return None
+
+    # The first byte tells us what type of entry this is, or signals a special case
+    entry_type = self.read(1)
+
+    if entry_type == ENTRY_CODE_END_OF_CHUNK:
+      # Handle end of chunk and try reading again
+      self._end_of_chunk()
+      return self.read_entry()    
+    elif entry_type == ENTRY_CODE_END_OF_FILE:
+      # Nothing further to do, return None
+      return None
+    else:
+      # Instantiate correct entry type and use this stream to read its data
+      return get_entry(entry_type, self, self.is_manifest)
+
+  def __next__(self):
+    &#34;&#34;&#34;Reads the next entry from the package.
+
+    Normally, iterating through a file reads a line at a time.
+    This override is provided to make for loops intuitive.
+    &#34;&#34;&#34;
+    entry = self.read_entry()
+    if not entry:
+        raise StopIteration
+    return entry
+  
+  def _end_of_chunk(self):
+    &#34;&#34;&#34;Code executed at end of chunk.&#34;&#34;&#34;
+    # Clear the read buffer, we&#39;re done with it
+    self._reset_read_buf()    
+
+    # Adjust virtual_pos to start of next chunk
+    self.virtual_pos[0] += 1    
+    self.virtual_pos[1] = 0
+
+    # If we haven&#39;t already, add a chunk marker indicating where the next chunk begins
+    if self.virtual_pos[0] &gt;= len(self.chunklocs):
+        self.chunklocs.append(self.raw.tell())
+
+  def _read_header(self):
+    # If we&#39;re not at the start of the file, why are we reading a header?
+    if (self.raw.tell() != 0):
+        raise ValueError(&#34;attempted to read header while not at start of file&#34;)
+
+    # The first byte of the header indicates the compression method of the package, if any
+    self.compressor = self.raw.read(1)
+    self._get_chunkprocessor()
+
+    # The next two bytes are zeroes and don&#39;t matter
+    self.raw.read(2)
+
+    # The fourth (last) byte of the header indicates the package version, which should be
+    # 5 for Transistor/Pyte and 7 for Hades
+    self.version = ord(self.raw.read(1))
+
+    # Update the virtual position to indicate we&#39;re at position 4
+    self.virtual_pos[1] = 4
+
+  def _reset_read_buf(self):
+    # Resets the state of the read buffer, clearing it and moving the position to 0
+    self._read_buf = b&#34;&#34;
+    self._read_pos = 0
+
+  def _read_chunk(self):
+    # If there&#39;s no data left in the file, we can&#39;t load another chunk, obviously
+    if self.raw.is_eof():
+      return None
+
+    # The first chunk actually includes the header, so remove it if we&#39;re at the start of the file
+    pos = self.raw.tell()   # This should be 4 exactly for the first chunk
+    chunksize = CHUNK_SIZE - pos if pos &lt;= 4 else CHUNK_SIZE
+
+    # Read the next chunk from the file using the correct chunk processor
+    self._read_buf = self._get_chunkprocessor().read_chunk(self.raw, chunksize)
+    self._read_pos = 0
+    self.virtual_pos[1] = 0
+
+    return self._read_buf
+  
+  def _read_from_buffer(self, amt):
+    # Advance position by amt and read that many bytes
+    data = self._read_buf[self._read_pos:self._read_pos+amt]
+    self._read_pos += amt
+    self.virtual_pos[1] += amt
+    return data
+  #endregion
+
+  #region Random Access
+  def _after_seek(self, old_pos, new_pos):
+    &#34;&#34;&#34;Executed after seek is called. We use this to wipe the buffer if it&#39;s stale.&#34;&#34;&#34;
+    if old_pos[0] != new_pos[0]:
+      # Buffer is now stale. Wipe it.
+      self._reset_read_buf()
+
+      chunknum = new_pos[0]
+      chunkpos = new_pos[1]
+      
+      # If this is the first chunk, we need to account for the header.
+      if chunknum == 0:
+        if chunkpos &lt;= 4:
+          # If we&#39;re moving to the header, we don&#39;t need to read a chunk, or do
+          # anything else.
+          return
+        else:
+          # We need to move the position within the buffer back by 4 because the
+          # header is not going to be loaded into the buffer.
+          chunkpos -= 4
+
+      # If we&#39;re seeking to a non-zero position within this chunk,
+      # we need to load that chunk to have something to actually seek.
+      if chunkpos &gt; 0:
+        self._read_chunk()
+        self._read_pos = chunkpos
+    else:
+      # Buffer is still okay. Just update the position within it.
+      self._read_pos = new_pos[1]
+  #endregion
+
+  #region Complete Loading
+  def load(self):
+    # Move to the start of the file (past the header)
+    self.seek(4, os.SEEK_SET)
+    entries = {}
+
+    for entry in self:
+      entries[entry.name] = entry
+
+    return entries
+
+  @staticmethod
+  def load_package(name, is_manifest=False):
+    with PackageReader(name, is_manifest=is_manifest) as p:
+      return p.load()
+  #endregion
+
+
+class PackageWriter(PackageIO):
+  #region Constructor
+  def __init__(self, name, closefd=True, opener=None, compressor=&#39;uncompressed&#39;, version=PACKAGE_VERSION_HADES, is_manifest=False):
+    super().__init__(name, closefd, opener, compressor, version, is_manifest)
+
+    # Initialize the write buffer
+    self._reset_write_buf()
+
+    # Write the header (based on compressor and version)
+    self._write_header()
+  #endregion
+
+  #region Basic Functionality Overrides
+  def close(self):
+    self._write_chunk(closing=True)
+    super().close()
+  #endregion
+
+  #region Write Access
+  def write(self, b):
+    # If the bytes given won&#39;t fit in a chunk, we can&#39;t write it at all
+    if len(b) &gt; CHUNK_SIZE:
+      raise OSError(f&#39;cannot write more than {CHUNK_SIZE} bytes at once&#39;)
+
+    # Check space in this chunk
+    availspace = len(self._write_buf.getvalue()) - self._write_buf.tell() - 1     # Why -1? Need room for end chunk byte
+    if len(b) &gt; len(availspace):
+      # No more room in the chunk, write the buffer out, which will allocate a new one
+      self._write_chunk()
+
+    # Write the bytes to the current chunk (may or may not have just been made)
+    self._write_buf.write(b) 
+    self.virtual_pos[1] += len(b)
+
+  def _write_header(self):
+    # If we&#39;re not at the start of the file, why are we writing a header?
+    if (self.raw.tell() != 0):
+      raise ValueError(&#34;attempted to write header while not at start of file&#34;)
+
+    # The first byte of the header indicates the compression method of the package, if any
+    self.raw.write(self._get_chunkprocessor()._typeCode)
+
+    # The next two bytes are zeroes and don&#39;t matter
+    self.raw.write(bytes([0, 0]))
+
+    # The fourth (last) byte of the header indicates the package version
+    self.raw.write(bytes([self.version]))
+
+    # Update the virtual position to indicate we&#39;re at position 4
+    self.virtual_pos[1] = 4
+
+  def _write_entry(self, entry):
+    # Write the entry&#39;s bytes to a temporary stream to figure out what the bytes are
+    entrystream = _BytesIO()
+    entrystream.write(entry.typeCode)
+    entry.write_to(entrystream)
+
+    # Write the entry&#39;s bytes to the &#34;actual&#34; stream
+    self.write(entrystream.getvalue())
+
+  def _write_chunk(self, closing=False):
+    # Write end-of-chunk or end-of-file
+    endbyte = ENTRY_CODE_END_OF_FILE if closing else ENTRY_CODE_END_OF_CHUNK
+    self._write_buf.write(endbyte)
+
+    # Write the current chunk to the file
+    self._get_chunkprocessor().write_chunk(self.raw, self._write_buf)
+
+    # Reset the write buffer to a blank state
+    self._reset_write_buf()
+
+    # Set the virtual position (chunk, pos_in_chunk) of the stream
+    self.virtual_pos[0] += 1
+    self.virtual_pos[1] = 0
+
+  def _reset_write_buf(self):
+    chunksize = CHUNK_SIZE - 4 if self.virtual_pos[0] == 0 else CHUNK_SIZE
+    self._write_buf = _BytesIO(bytes(chunksize))
+  #endregion
+
+  #region Random Access (disabled)
+  def seekable(self):
+    return False
+  #endregion
+
+
+class PackageWithManifestReader(PackageReader):
+  def __init__(self, name, closefd=True, opener=None, is_manifest=False):
+    super().__init__(f&#39;{name}.pkg&#39;, closefd, opener, is_manifest)
+    self.manifest = PackageReader.load_package(f&#39;{name}.pkg_manifest&#39;)
+
+  def read_entry(self):
+    entry = super().read_entry()
+    if entry is None:
+      return None
+
+    # Can we find a matching manifest entry?
+    if entry.name in self.manifest:
+      entry.manifest_entry = self.manifest[entry.name]
+
+    return entry</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="deppth.sggpio.PackageIO"><code class="flex name class">
+<span>class <span class="ident">PackageIO</span></span>
+<span>(</span><span>name, mode='r', closefd=True, opener=None, compressor='uncompressed', version=7, is_manifest=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base class for reading to and writing from SuperGiant Games asset packages.</p>
+<p>You almost never should instantiate this directly nor any subclass, but
+instead should use the open_package function, which will return the correct
+subclass.</p>
+<p>This class implements the IOBase interface, so typical IO patterns should
+readily be familiar. As such, documentation will be omitted for members
+that behave like any standard IO object.</p>
+<p>Creates an instance of PackageIO, opening a stream to read the package.</p>
+<p>The name, mode, closefd, and opener properties match those from io.open.</p>
+<p>The compressor property indicates the type of compression used in the package.
+Because this class cannot read or write data, the user must specify. The possible
+values are 'uncompressed', 'lz4' and 'lzf'. LZ4 and LZF compression require the
+lz4 and lzf modules, respectively.</p>
+<p>The version property indicates the version number of the package. The PACKAGE_VERSION_*
+constants provide the correct values for this property</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PackageIO(io.IOBase, _IOExtensionMixin):
+  &#34;&#34;&#34;Base class for reading to and writing from SuperGiant Games asset packages.
+  
+  You almost never should instantiate this directly nor any subclass, but
+  instead should use the open_package function, which will return the correct
+  subclass.
+
+  This class implements the IOBase interface, so typical IO patterns should
+  readily be familiar. As such, documentation will be omitted for members
+  that behave like any standard IO object.
+  &#34;&#34;&#34;
+
+  #region Basic Functionality
+  def __init__(self, name, mode=&#39;r&#39;, closefd=True, opener=None, compressor=&#39;uncompressed&#39;, version=PACKAGE_VERSION_HADES, is_manifest=False):
+    &#34;&#34;&#34;Creates an instance of PackageIO, opening a stream to read the package.
+    
+    The name, mode, closefd, and opener properties match those from io.open.
+
+    The compressor property indicates the type of compression used in the package.
+    Because this class cannot read or write data, the user must specify. The possible
+    values are &#39;uncompressed&#39;, &#39;lz4&#39; and &#39;lzf&#39;. LZ4 and LZF compression require the
+    lz4 and lzf modules, respectively.
+
+    The version property indicates the version number of the package. The PACKAGE_VERSION_*
+    constants provide the correct values for this property
+    &#34;&#34;&#34;
+    if not mode in [&#39;r&#39;, &#39;w&#39;, &#39;x&#39;]:
+      raise ValueError(f&#39;invalid mode: {mode}. Only modes r, w, and x are supported&#39;)
+    self.mode = mode + &#39;b&#39;
+    self.raw = _FileIO(name, mode, closefd, opener)
+    self.virtual_pos = [0, 0]   # Chunk num and position within chunk
+    self.chunklocs = [4]
+    self.compressor = compressor
+    self.chunkprocessor = None
+    self.version = version
+    self.is_manifest = is_manifest
+
+  def close(self):
+    if self.raw is not None and not self.closed:
+      try:
+        self.flush()
+      finally:
+        self.raw.close()
+
+  @property
+  def closed(self):
+    return self.raw.closed
+
+  def fileno(self):
+    return self.raw.fileno()
+
+  def flush(self):
+    if self.closed:
+      raise ValueError(&#34;flush on closed file&#34;)
+    self.raw.flush()
+
+  def _get_chunkprocessor(self):
+    if not self.chunkprocessor:
+      if len(self.compressor) == 1:
+        self.chunkprocessor = get_chunkprocessor(self.compressor)
+      else:
+        self.chunkprocessor = get_chunkprocessor_by_name(self.compressor)
+    return self.chunkprocessor
+            
+  def isatty(self):
+    return self.raw.fileno()
+
+  def is_eof(self):
+    &#34;&#34;&#34;Returns whether the underlying file stream is at EOF.
+
+    This is not necessarily whether the reader or writer itself is at EOF.&#34;&#34;&#34;
+    return self.raw.is_eof()
+  #endregion
+
+  #region Read Access
+  def read(self, size):
+    &#34;&#34;&#34;Reads the next specified bytes of data from the package.
+    
+    This will just return raw bytes from the underlying file stream without
+    decompression.
+    &#34;&#34;&#34;
+    return self.raw.read(size)
+
+  def readable(self):
+    return self.raw.readable()
+
+  def read_entry(self):
+    &#34;&#34;&#34;Reads the next entry from the package.
+
+    This function is meant to be called many times in succession to
+    read the entire contents of the package, until the end is reached,
+    at which point None is returned.
+
+    This function assumes the stream is positioned to read the next
+    entry. Adjusting the position of the stream manually will likely
+    make this function unusable. You have been warned.
+
+    The object returned will either be None or an instance of a subclass
+    of EntryBase.
+    &#34;&#34;&#34;
+    raise NotImplementedError(&#34;Cannot read entries from PackageIOBase&#34;)
+  #endregion
+
+  #region Write Access
+  def write(self, b):
+    &#34;&#34;&#34;Writes the specified bytes to the package file.
+    
+    This function is provided in fulfillment of the IOBase interface,
+    and is implemented for convenience within this module. Consumers
+    of this module should almost certainly not call this function.
+    &#34;&#34;&#34;
+    raise NotImplementedError()
+
+  def writable(self):
+    return self.raw.writable()
+  #endregion
+
+  #region Random Access
+  def seek(self, pos, whence=0):
+    &#34;&#34;&#34;Change stream position.
+
+    Functions similar to IOBase.seek, but currently only os.SEEK_SET is
+    supported for whence.
+
+    Returns the stream position, which is a virtual position in a hypothetical
+    uncompressed version of the stream.
+    &#34;&#34;&#34;
+    if not self.seekable():
+      return OSError(&#34;stream not seekable&#34;)
+
+    if whence != os.SEEK_SET:
+      raise NotImplementedError(&#34;Only os.SEEK_SET is supported for now&#34;)
+    
+    old_virtual_pos = self.virtual_pos.copy()
+
+    # Figure out which chunk to go to.
+    new_virtual_pos = [pos // CHUNK_SIZE, pos % CHUNK_SIZE]
+
+    # If we need to move to a new chunk, do that.
+    if new_virtual_pos[0] != self.virtual_pos[0]:
+      self._seek_chunk(new_virtual_pos[0])
+
+    # Set the virtual position within this chunk to the new one.
+    # The reason why it&#39;s virtual is we aren&#39;t actually reading the
+    # compressed data to navigate within a decompressed chunk.
+    self.virtual_pos[1] = new_virtual_pos[1]
+
+    # Execute &#34;after seek&#34; code to handle potentially stale buffers.
+    self._after_seek(old_virtual_pos, new_virtual_pos)
+
+    # Return the new stream position.
+    return self.tell()
+
+  def tell(self):
+    &#34;&#34;&#34;Returns the stream position.
+    
+    For this stream, tell functions a bit differently due to the way the
+    data is being read and decompressed on the fly. The stream position
+    is more of a &#34;virtual&#34; concept. This function will return what the
+    stream position *would* be if the contents were fully decompressed.
+
+    The underlying FileIO object&#39;s tell function can be used to return
+    the position of the stream accessing the compressed data.
+    &#34;&#34;&#34;
+    return self.virtual_pos[0]*CHUNK_SIZE + self.virtual_pos[1]
+
+  def truncate(self, pos=None):
+    &#34;&#34;&#34;This action is not supported at this time, since it&#39;s not clear how it should work.&#34;&#34;&#34;
+    raise NotImplementedError(&#34;truncate for PackageIO streams is not supported&#34;)
+      
+  def _skip_chunk(self):
+    &#34;&#34;&#34;Skips the next chunk in the stream. Returns whether there actually was a chunk.&#34;&#34;&#34;
+    # If there&#39;s no data left in the file, there&#39;s no more chunks to load.
+    if self.raw.is_eof():
+        return False
+
+    # The first chunk actually includes the header, so remove it if we&#39;re at the start of the file.
+    pos = self.raw.tell()   # This should be 4 exactly for the first chunk
+    chunksize = CHUNK_SIZE - pos if pos &lt;= 4 else CHUNK_SIZE
+
+    # Skip the next chunk from the file using the correct chunk processor
+    self._get_chunkprocessor().skip_chunk(self.raw, chunksize)
+    self.virtual_pos[0] += 1
+    
+    # If we haven&#39;t already, add a chunk marker indicating where the next chunk begins
+    if self.virtual_pos[0] &gt;= len(self.chunklocs):
+      self.chunklocs.append(self.raw.tell())
+
+    return True
+
+  def _seek_chunk(self, n):
+    &#34;&#34;&#34;Seeks to the start of the chunk n (0-indexed) in the package.&#34;&#34;&#34;
+    if n &lt; len(self.chunklocs):
+        # We already know where this is! Just seek to that spot.
+        self.raw.seek(self.chunklocs[n], os.SEEK_SET)
+        self.virtual_pos[0] = n
+    else:
+        # We don&#39;t know where this is! Go to the start of the last chunk we know
+        # about and skip chunks until we get there!
+        self.raw.seek(self.chunklocs[-1], os.SEEK_SET)
+        self.virtual_pos[0] = len(self.chunklocs) - 1
+        while self.virtual_pos[0] &lt; n:
+            self._skip_chunk()
+
+  def _after_seek(self, old_pos, new_pos):
+    &#34;&#34;&#34;Executed immediately after seek is called. Use this to, e.g., handle stale buffers.&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>io.IOBase</li>
+<li>_io._IOBase</li>
+<li><a title="deppth.utils.IOExtensionMixin" href="utils.html#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="deppth.sggpio.PackageReader" href="#deppth.sggpio.PackageReader">PackageReader</a></li>
+<li><a title="deppth.sggpio.PackageWriter" href="#deppth.sggpio.PackageWriter">PackageWriter</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="deppth.sggpio.PackageIO.closed"><code class="name">var <span class="ident">closed</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def closed(self):
+  return self.raw.closed</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="deppth.sggpio.PackageIO.close"><code class="name flex">
+<span>def <span class="ident">close</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Flush and close the IO object.</p>
+<p>This method has no effect if the file is already closed.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def close(self):
+  if self.raw is not None and not self.closed:
+    try:
+      self.flush()
+    finally:
+      self.raw.close()</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.fileno"><code class="name flex">
+<span>def <span class="ident">fileno</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns underlying file descriptor if one exists.</p>
+<p>OSError is raised if the IO object does not use a file descriptor.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fileno(self):
+  return self.raw.fileno()</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.flush"><code class="name flex">
+<span>def <span class="ident">flush</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Flush write buffers, if applicable.</p>
+<p>This is not implemented for read-only and non-blocking streams.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def flush(self):
+  if self.closed:
+    raise ValueError(&#34;flush on closed file&#34;)
+  self.raw.flush()</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.is_eof"><code class="name flex">
+<span>def <span class="ident">is_eof</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns whether the underlying file stream is at EOF.</p>
+<p>This is not necessarily whether the reader or writer itself is at EOF.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_eof(self):
+  &#34;&#34;&#34;Returns whether the underlying file stream is at EOF.
+
+  This is not necessarily whether the reader or writer itself is at EOF.&#34;&#34;&#34;
+  return self.raw.is_eof()</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.isatty"><code class="name flex">
+<span>def <span class="ident">isatty</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return whether this is an 'interactive' stream.</p>
+<p>Return False if it can't be determined.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def isatty(self):
+  return self.raw.fileno()</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.read"><code class="name flex">
+<span>def <span class="ident">read</span></span>(<span>self, size)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads the next specified bytes of data from the package.</p>
+<p>This will just return raw bytes from the underlying file stream without
+decompression.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read(self, size):
+  &#34;&#34;&#34;Reads the next specified bytes of data from the package.
+  
+  This will just return raw bytes from the underlying file stream without
+  decompression.
+  &#34;&#34;&#34;
+  return self.raw.read(size)</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.read_entry"><code class="name flex">
+<span>def <span class="ident">read_entry</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads the next entry from the package.</p>
+<p>This function is meant to be called many times in succession to
+read the entire contents of the package, until the end is reached,
+at which point None is returned.</p>
+<p>This function assumes the stream is positioned to read the next
+entry. Adjusting the position of the stream manually will likely
+make this function unusable. You have been warned.</p>
+<p>The object returned will either be None or an instance of a subclass
+of EntryBase.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_entry(self):
+  &#34;&#34;&#34;Reads the next entry from the package.
+
+  This function is meant to be called many times in succession to
+  read the entire contents of the package, until the end is reached,
+  at which point None is returned.
+
+  This function assumes the stream is positioned to read the next
+  entry. Adjusting the position of the stream manually will likely
+  make this function unusable. You have been warned.
+
+  The object returned will either be None or an instance of a subclass
+  of EntryBase.
+  &#34;&#34;&#34;
+  raise NotImplementedError(&#34;Cannot read entries from PackageIOBase&#34;)</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.readable"><code class="name flex">
+<span>def <span class="ident">readable</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return whether object was opened for reading.</p>
+<p>If False, read() will raise OSError.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def readable(self):
+  return self.raw.readable()</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.seek"><code class="name flex">
+<span>def <span class="ident">seek</span></span>(<span>self, pos, whence=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Change stream position.</p>
+<p>Functions similar to IOBase.seek, but currently only os.SEEK_SET is
+supported for whence.</p>
+<p>Returns the stream position, which is a virtual position in a hypothetical
+uncompressed version of the stream.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def seek(self, pos, whence=0):
+  &#34;&#34;&#34;Change stream position.
+
+  Functions similar to IOBase.seek, but currently only os.SEEK_SET is
+  supported for whence.
+
+  Returns the stream position, which is a virtual position in a hypothetical
+  uncompressed version of the stream.
+  &#34;&#34;&#34;
+  if not self.seekable():
+    return OSError(&#34;stream not seekable&#34;)
+
+  if whence != os.SEEK_SET:
+    raise NotImplementedError(&#34;Only os.SEEK_SET is supported for now&#34;)
+  
+  old_virtual_pos = self.virtual_pos.copy()
+
+  # Figure out which chunk to go to.
+  new_virtual_pos = [pos // CHUNK_SIZE, pos % CHUNK_SIZE]
+
+  # If we need to move to a new chunk, do that.
+  if new_virtual_pos[0] != self.virtual_pos[0]:
+    self._seek_chunk(new_virtual_pos[0])
+
+  # Set the virtual position within this chunk to the new one.
+  # The reason why it&#39;s virtual is we aren&#39;t actually reading the
+  # compressed data to navigate within a decompressed chunk.
+  self.virtual_pos[1] = new_virtual_pos[1]
+
+  # Execute &#34;after seek&#34; code to handle potentially stale buffers.
+  self._after_seek(old_virtual_pos, new_virtual_pos)
+
+  # Return the new stream position.
+  return self.tell()</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.tell"><code class="name flex">
+<span>def <span class="ident">tell</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the stream position.</p>
+<p>For this stream, tell functions a bit differently due to the way the
+data is being read and decompressed on the fly. The stream position
+is more of a "virtual" concept. This function will return what the
+stream position <em>would</em> be if the contents were fully decompressed.</p>
+<p>The underlying FileIO object's tell function can be used to return
+the position of the stream accessing the compressed data.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def tell(self):
+  &#34;&#34;&#34;Returns the stream position.
+  
+  For this stream, tell functions a bit differently due to the way the
+  data is being read and decompressed on the fly. The stream position
+  is more of a &#34;virtual&#34; concept. This function will return what the
+  stream position *would* be if the contents were fully decompressed.
+
+  The underlying FileIO object&#39;s tell function can be used to return
+  the position of the stream accessing the compressed data.
+  &#34;&#34;&#34;
+  return self.virtual_pos[0]*CHUNK_SIZE + self.virtual_pos[1]</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.truncate"><code class="name flex">
+<span>def <span class="ident">truncate</span></span>(<span>self, pos=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This action is not supported at this time, since it's not clear how it should work.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def truncate(self, pos=None):
+  &#34;&#34;&#34;This action is not supported at this time, since it&#39;s not clear how it should work.&#34;&#34;&#34;
+  raise NotImplementedError(&#34;truncate for PackageIO streams is not supported&#34;)</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.writable"><code class="name flex">
+<span>def <span class="ident">writable</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return whether object was opened for writing.</p>
+<p>If False, write() will raise OSError.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def writable(self):
+  return self.raw.writable()</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageIO.write"><code class="name flex">
+<span>def <span class="ident">write</span></span>(<span>self, b)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes the specified bytes to the package file.</p>
+<p>This function is provided in fulfillment of the IOBase interface,
+and is implemented for convenience within this module. Consumers
+of this module should almost certainly not call this function.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write(self, b):
+  &#34;&#34;&#34;Writes the specified bytes to the package file.
+  
+  This function is provided in fulfillment of the IOBase interface,
+  and is implemented for convenience within this module. Consumers
+  of this module should almost certainly not call this function.
+  &#34;&#34;&#34;
+  raise NotImplementedError()</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="deppth.utils.IOExtensionMixin" href="utils.html#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></b></code>:
+<ul class="hlist">
+<li><code><a title="deppth.utils.IOExtensionMixin.read_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.read_7bit_encoded_int">read_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_big_string" href="utils.html#deppth.utils.IOExtensionMixin.read_big_string">read_big_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_int" href="utils.html#deppth.utils.IOExtensionMixin.read_int">read_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_single" href="utils.html#deppth.utils.IOExtensionMixin.read_single">read_single</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_string" href="utils.html#deppth.utils.IOExtensionMixin.read_string">read_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.read_string_7b">read_string_7b</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.write_7bit_encoded_int">write_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_big_string" href="utils.html#deppth.utils.IOExtensionMixin.write_big_string">write_big_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_int" href="utils.html#deppth.utils.IOExtensionMixin.write_int">write_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_single" href="utils.html#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_string" href="utils.html#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="deppth.sggpio.PackageReader"><code class="flex name class">
+<span>class <span class="ident">PackageReader</span></span>
+<span>(</span><span>name, closefd=True, opener=None, is_manifest=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base class for reading to and writing from SuperGiant Games asset packages.</p>
+<p>You almost never should instantiate this directly nor any subclass, but
+instead should use the open_package function, which will return the correct
+subclass.</p>
+<p>This class implements the IOBase interface, so typical IO patterns should
+readily be familiar. As such, documentation will be omitted for members
+that behave like any standard IO object.</p>
+<p>Creates an instance of PackageIO, opening a stream to read the package.</p>
+<p>The name, mode, closefd, and opener properties match those from io.open.</p>
+<p>The compressor property indicates the type of compression used in the package.
+Because this class cannot read or write data, the user must specify. The possible
+values are 'uncompressed', 'lz4' and 'lzf'. LZ4 and LZF compression require the
+lz4 and lzf modules, respectively.</p>
+<p>The version property indicates the version number of the package. The PACKAGE_VERSION_*
+constants provide the correct values for this property</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PackageReader(PackageIO):
+  #region Constructor
+  def __init__(self, name, closefd=True, opener=None, is_manifest=False):
+    super().__init__(name, &#39;r&#39;, closefd, opener, is_manifest=is_manifest)
+
+    # Initialize the read buffer
+    self._reset_read_buf()
+
+    # Read the header, which should set the compressor and version correctly
+    self._read_header()
+  #endregion
+
+  #region Basic Functionality Overrides
+  def is_eof(self):
+    # if the file is eof and there&#39;s nothing left in the read buffer, we&#39;re EOF
+    return self.raw.is_eof() and self._read_pos &gt;= len(self._read_buf)
+  #endregion
+
+  #region Read Access
+  def read(self, size):
+    &#34;&#34;&#34;Reads the next specified bytes of data from the package.
+    
+    This function differs from standard IO implementations in that
+    the size parameter is (currently) mandatory, and None is not
+    a legal value.
+
+    Because packages are usually stored compressed, and this class
+    will invoke decompression on chunks of data as needed, it&#39;s
+    worth clarifying that this function will return the specified
+    number of bytes of uncompressed data. The actual amount of data
+    read could differ for a number of different reasons, not the least
+    of which being the fact that this stream utilizes a buffer.
+    &#34;&#34;&#34;
+
+    # How many bytes are left in the current chunk?
+    num_bytes_to_read = len(self._read_buf) - self._read_pos
+
+    # If we can satisfy the read just with the current chunk, great!
+    if size &lt;= num_bytes_to_read:
+      return self._read_from_buffer(size)
+
+    # Otherwise, we&#39;ll need to load at least one more chunk 
+    # to load the requested amount of bytes
+    data = [self._read_buf[self._read_pos:]]
+    num_bytes_read = num_bytes_to_read
+
+    # Load chunks of additional data until we have enough bytes to satisfy the request
+    while True:
+      if self._read_chunk() is not None:
+        if len(self._read_buf) &lt; size - num_bytes_read:
+          # Read in this entire chunk, and keep going
+          num_bytes_read += len(self._read_buf)
+          data.append(self._read_buf)
+        else:
+          # Read in enough data to satisfy the request, and stop
+          data.append(self._read_from_buffer(size - num_bytes_read))
+          break
+      else:
+        break   # Out of data to load, so this is it!
+
+    return b&#34;&#34;.join(data)
+
+  def read_entry(self):
+    &#34;&#34;&#34;Reads the next entry from the package.
+
+    This function is meant to be called many times in succession to
+    read the entire contents of the package, until the end is reached,
+    at which point None is returned.
+
+    This function assumes the stream is positioned to read the next
+    entry. Adjusting the position of the stream manually will likely
+    make this function unusable. You have been warned.
+
+    The object returned will either be None or an instance of a subclass
+    of EntryBase.
+    &#34;&#34;&#34;
+    if self.is_eof():
+      return None
+
+    # The first byte tells us what type of entry this is, or signals a special case
+    entry_type = self.read(1)
+
+    if entry_type == ENTRY_CODE_END_OF_CHUNK:
+      # Handle end of chunk and try reading again
+      self._end_of_chunk()
+      return self.read_entry()    
+    elif entry_type == ENTRY_CODE_END_OF_FILE:
+      # Nothing further to do, return None
+      return None
+    else:
+      # Instantiate correct entry type and use this stream to read its data
+      return get_entry(entry_type, self, self.is_manifest)
+
+  def __next__(self):
+    &#34;&#34;&#34;Reads the next entry from the package.
+
+    Normally, iterating through a file reads a line at a time.
+    This override is provided to make for loops intuitive.
+    &#34;&#34;&#34;
+    entry = self.read_entry()
+    if not entry:
+        raise StopIteration
+    return entry
+  
+  def _end_of_chunk(self):
+    &#34;&#34;&#34;Code executed at end of chunk.&#34;&#34;&#34;
+    # Clear the read buffer, we&#39;re done with it
+    self._reset_read_buf()    
+
+    # Adjust virtual_pos to start of next chunk
+    self.virtual_pos[0] += 1    
+    self.virtual_pos[1] = 0
+
+    # If we haven&#39;t already, add a chunk marker indicating where the next chunk begins
+    if self.virtual_pos[0] &gt;= len(self.chunklocs):
+        self.chunklocs.append(self.raw.tell())
+
+  def _read_header(self):
+    # If we&#39;re not at the start of the file, why are we reading a header?
+    if (self.raw.tell() != 0):
+        raise ValueError(&#34;attempted to read header while not at start of file&#34;)
+
+    # The first byte of the header indicates the compression method of the package, if any
+    self.compressor = self.raw.read(1)
+    self._get_chunkprocessor()
+
+    # The next two bytes are zeroes and don&#39;t matter
+    self.raw.read(2)
+
+    # The fourth (last) byte of the header indicates the package version, which should be
+    # 5 for Transistor/Pyte and 7 for Hades
+    self.version = ord(self.raw.read(1))
+
+    # Update the virtual position to indicate we&#39;re at position 4
+    self.virtual_pos[1] = 4
+
+  def _reset_read_buf(self):
+    # Resets the state of the read buffer, clearing it and moving the position to 0
+    self._read_buf = b&#34;&#34;
+    self._read_pos = 0
+
+  def _read_chunk(self):
+    # If there&#39;s no data left in the file, we can&#39;t load another chunk, obviously
+    if self.raw.is_eof():
+      return None
+
+    # The first chunk actually includes the header, so remove it if we&#39;re at the start of the file
+    pos = self.raw.tell()   # This should be 4 exactly for the first chunk
+    chunksize = CHUNK_SIZE - pos if pos &lt;= 4 else CHUNK_SIZE
+
+    # Read the next chunk from the file using the correct chunk processor
+    self._read_buf = self._get_chunkprocessor().read_chunk(self.raw, chunksize)
+    self._read_pos = 0
+    self.virtual_pos[1] = 0
+
+    return self._read_buf
+  
+  def _read_from_buffer(self, amt):
+    # Advance position by amt and read that many bytes
+    data = self._read_buf[self._read_pos:self._read_pos+amt]
+    self._read_pos += amt
+    self.virtual_pos[1] += amt
+    return data
+  #endregion
+
+  #region Random Access
+  def _after_seek(self, old_pos, new_pos):
+    &#34;&#34;&#34;Executed after seek is called. We use this to wipe the buffer if it&#39;s stale.&#34;&#34;&#34;
+    if old_pos[0] != new_pos[0]:
+      # Buffer is now stale. Wipe it.
+      self._reset_read_buf()
+
+      chunknum = new_pos[0]
+      chunkpos = new_pos[1]
+      
+      # If this is the first chunk, we need to account for the header.
+      if chunknum == 0:
+        if chunkpos &lt;= 4:
+          # If we&#39;re moving to the header, we don&#39;t need to read a chunk, or do
+          # anything else.
+          return
+        else:
+          # We need to move the position within the buffer back by 4 because the
+          # header is not going to be loaded into the buffer.
+          chunkpos -= 4
+
+      # If we&#39;re seeking to a non-zero position within this chunk,
+      # we need to load that chunk to have something to actually seek.
+      if chunkpos &gt; 0:
+        self._read_chunk()
+        self._read_pos = chunkpos
+    else:
+      # Buffer is still okay. Just update the position within it.
+      self._read_pos = new_pos[1]
+  #endregion
+
+  #region Complete Loading
+  def load(self):
+    # Move to the start of the file (past the header)
+    self.seek(4, os.SEEK_SET)
+    entries = {}
+
+    for entry in self:
+      entries[entry.name] = entry
+
+    return entries
+
+  @staticmethod
+  def load_package(name, is_manifest=False):
+    with PackageReader(name, is_manifest=is_manifest) as p:
+      return p.load()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="deppth.sggpio.PackageIO" href="#deppth.sggpio.PackageIO">PackageIO</a></li>
+<li>io.IOBase</li>
+<li>_io._IOBase</li>
+<li><a title="deppth.utils.IOExtensionMixin" href="utils.html#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="deppth.sggpio.PackageWithManifestReader" href="#deppth.sggpio.PackageWithManifestReader">PackageWithManifestReader</a></li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="deppth.sggpio.PackageReader.load_package"><code class="name flex">
+<span>def <span class="ident">load_package</span></span>(<span>name, is_manifest=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def load_package(name, is_manifest=False):
+  with PackageReader(name, is_manifest=is_manifest) as p:
+    return p.load()</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="deppth.sggpio.PackageReader.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load(self):
+  # Move to the start of the file (past the header)
+  self.seek(4, os.SEEK_SET)
+  entries = {}
+
+  for entry in self:
+    entries[entry.name] = entry
+
+  return entries</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageReader.read"><code class="name flex">
+<span>def <span class="ident">read</span></span>(<span>self, size)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads the next specified bytes of data from the package.</p>
+<p>This function differs from standard IO implementations in that
+the size parameter is (currently) mandatory, and None is not
+a legal value.</p>
+<p>Because packages are usually stored compressed, and this class
+will invoke decompression on chunks of data as needed, it's
+worth clarifying that this function will return the specified
+number of bytes of uncompressed data. The actual amount of data
+read could differ for a number of different reasons, not the least
+of which being the fact that this stream utilizes a buffer.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read(self, size):
+  &#34;&#34;&#34;Reads the next specified bytes of data from the package.
+  
+  This function differs from standard IO implementations in that
+  the size parameter is (currently) mandatory, and None is not
+  a legal value.
+
+  Because packages are usually stored compressed, and this class
+  will invoke decompression on chunks of data as needed, it&#39;s
+  worth clarifying that this function will return the specified
+  number of bytes of uncompressed data. The actual amount of data
+  read could differ for a number of different reasons, not the least
+  of which being the fact that this stream utilizes a buffer.
+  &#34;&#34;&#34;
+
+  # How many bytes are left in the current chunk?
+  num_bytes_to_read = len(self._read_buf) - self._read_pos
+
+  # If we can satisfy the read just with the current chunk, great!
+  if size &lt;= num_bytes_to_read:
+    return self._read_from_buffer(size)
+
+  # Otherwise, we&#39;ll need to load at least one more chunk 
+  # to load the requested amount of bytes
+  data = [self._read_buf[self._read_pos:]]
+  num_bytes_read = num_bytes_to_read
+
+  # Load chunks of additional data until we have enough bytes to satisfy the request
+  while True:
+    if self._read_chunk() is not None:
+      if len(self._read_buf) &lt; size - num_bytes_read:
+        # Read in this entire chunk, and keep going
+        num_bytes_read += len(self._read_buf)
+        data.append(self._read_buf)
+      else:
+        # Read in enough data to satisfy the request, and stop
+        data.append(self._read_from_buffer(size - num_bytes_read))
+        break
+    else:
+      break   # Out of data to load, so this is it!
+
+  return b&#34;&#34;.join(data)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="deppth.sggpio.PackageIO" href="#deppth.sggpio.PackageIO">PackageIO</a></b></code>:
+<ul class="hlist">
+<li><code><a title="deppth.sggpio.PackageIO.close" href="#deppth.sggpio.PackageIO.close">close</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.fileno" href="#deppth.sggpio.PackageIO.fileno">fileno</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.flush" href="#deppth.sggpio.PackageIO.flush">flush</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.is_eof" href="#deppth.sggpio.PackageIO.is_eof">is_eof</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.isatty" href="#deppth.sggpio.PackageIO.isatty">isatty</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.read_7bit_encoded_int">read_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_big_string" href="utils.html#deppth.utils.IOExtensionMixin.read_big_string">read_big_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_entry" href="#deppth.sggpio.PackageIO.read_entry">read_entry</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_int" href="utils.html#deppth.utils.IOExtensionMixin.read_int">read_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_single" href="utils.html#deppth.utils.IOExtensionMixin.read_single">read_single</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_string" href="utils.html#deppth.utils.IOExtensionMixin.read_string">read_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.read_string_7b">read_string_7b</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.readable" href="#deppth.sggpio.PackageIO.readable">readable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.seek" href="#deppth.sggpio.PackageIO.seek">seek</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.tell" href="#deppth.sggpio.PackageIO.tell">tell</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.truncate" href="#deppth.sggpio.PackageIO.truncate">truncate</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.writable" href="#deppth.sggpio.PackageIO.writable">writable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write" href="#deppth.sggpio.PackageIO.write">write</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.write_7bit_encoded_int">write_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_big_string" href="utils.html#deppth.utils.IOExtensionMixin.write_big_string">write_big_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_int" href="utils.html#deppth.utils.IOExtensionMixin.write_int">write_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_single" href="utils.html#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_string" href="utils.html#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="deppth.sggpio.PackageWithManifestReader"><code class="flex name class">
+<span>class <span class="ident">PackageWithManifestReader</span></span>
+<span>(</span><span>name, closefd=True, opener=None, is_manifest=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base class for reading to and writing from SuperGiant Games asset packages.</p>
+<p>You almost never should instantiate this directly nor any subclass, but
+instead should use the open_package function, which will return the correct
+subclass.</p>
+<p>This class implements the IOBase interface, so typical IO patterns should
+readily be familiar. As such, documentation will be omitted for members
+that behave like any standard IO object.</p>
+<p>Creates an instance of PackageIO, opening a stream to read the package.</p>
+<p>The name, mode, closefd, and opener properties match those from io.open.</p>
+<p>The compressor property indicates the type of compression used in the package.
+Because this class cannot read or write data, the user must specify. The possible
+values are 'uncompressed', 'lz4' and 'lzf'. LZ4 and LZF compression require the
+lz4 and lzf modules, respectively.</p>
+<p>The version property indicates the version number of the package. The PACKAGE_VERSION_*
+constants provide the correct values for this property</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PackageWithManifestReader(PackageReader):
+  def __init__(self, name, closefd=True, opener=None, is_manifest=False):
+    super().__init__(f&#39;{name}.pkg&#39;, closefd, opener, is_manifest)
+    self.manifest = PackageReader.load_package(f&#39;{name}.pkg_manifest&#39;)
+
+  def read_entry(self):
+    entry = super().read_entry()
+    if entry is None:
+      return None
+
+    # Can we find a matching manifest entry?
+    if entry.name in self.manifest:
+      entry.manifest_entry = self.manifest[entry.name]
+
+    return entry</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="deppth.sggpio.PackageReader" href="#deppth.sggpio.PackageReader">PackageReader</a></li>
+<li><a title="deppth.sggpio.PackageIO" href="#deppth.sggpio.PackageIO">PackageIO</a></li>
+<li>io.IOBase</li>
+<li>_io._IOBase</li>
+<li><a title="deppth.utils.IOExtensionMixin" href="utils.html#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="deppth.sggpio.PackageReader" href="#deppth.sggpio.PackageReader">PackageReader</a></b></code>:
+<ul class="hlist">
+<li><code><a title="deppth.sggpio.PackageReader.close" href="#deppth.sggpio.PackageIO.close">close</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.fileno" href="#deppth.sggpio.PackageIO.fileno">fileno</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.flush" href="#deppth.sggpio.PackageIO.flush">flush</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.is_eof" href="#deppth.sggpio.PackageIO.is_eof">is_eof</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.isatty" href="#deppth.sggpio.PackageIO.isatty">isatty</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read" href="#deppth.sggpio.PackageReader.read">read</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.read_7bit_encoded_int">read_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read_big_string" href="utils.html#deppth.utils.IOExtensionMixin.read_big_string">read_big_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read_entry" href="#deppth.sggpio.PackageIO.read_entry">read_entry</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read_int" href="utils.html#deppth.utils.IOExtensionMixin.read_int">read_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read_single" href="utils.html#deppth.utils.IOExtensionMixin.read_single">read_single</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read_string" href="utils.html#deppth.utils.IOExtensionMixin.read_string">read_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.read_string_7b">read_string_7b</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.readable" href="#deppth.sggpio.PackageIO.readable">readable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.seek" href="#deppth.sggpio.PackageIO.seek">seek</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.tell" href="#deppth.sggpio.PackageIO.tell">tell</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.truncate" href="#deppth.sggpio.PackageIO.truncate">truncate</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.writable" href="#deppth.sggpio.PackageIO.writable">writable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.write" href="#deppth.sggpio.PackageIO.write">write</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.write_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.write_7bit_encoded_int">write_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.write_big_string" href="utils.html#deppth.utils.IOExtensionMixin.write_big_string">write_big_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.write_int" href="utils.html#deppth.utils.IOExtensionMixin.write_int">write_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.write_single" href="utils.html#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.write_string" href="utils.html#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.write_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="deppth.sggpio.PackageWriter"><code class="flex name class">
+<span>class <span class="ident">PackageWriter</span></span>
+<span>(</span><span>name, closefd=True, opener=None, compressor='uncompressed', version=7, is_manifest=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base class for reading to and writing from SuperGiant Games asset packages.</p>
+<p>You almost never should instantiate this directly nor any subclass, but
+instead should use the open_package function, which will return the correct
+subclass.</p>
+<p>This class implements the IOBase interface, so typical IO patterns should
+readily be familiar. As such, documentation will be omitted for members
+that behave like any standard IO object.</p>
+<p>Creates an instance of PackageIO, opening a stream to read the package.</p>
+<p>The name, mode, closefd, and opener properties match those from io.open.</p>
+<p>The compressor property indicates the type of compression used in the package.
+Because this class cannot read or write data, the user must specify. The possible
+values are 'uncompressed', 'lz4' and 'lzf'. LZ4 and LZF compression require the
+lz4 and lzf modules, respectively.</p>
+<p>The version property indicates the version number of the package. The PACKAGE_VERSION_*
+constants provide the correct values for this property</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PackageWriter(PackageIO):
+  #region Constructor
+  def __init__(self, name, closefd=True, opener=None, compressor=&#39;uncompressed&#39;, version=PACKAGE_VERSION_HADES, is_manifest=False):
+    super().__init__(name, closefd, opener, compressor, version, is_manifest)
+
+    # Initialize the write buffer
+    self._reset_write_buf()
+
+    # Write the header (based on compressor and version)
+    self._write_header()
+  #endregion
+
+  #region Basic Functionality Overrides
+  def close(self):
+    self._write_chunk(closing=True)
+    super().close()
+  #endregion
+
+  #region Write Access
+  def write(self, b):
+    # If the bytes given won&#39;t fit in a chunk, we can&#39;t write it at all
+    if len(b) &gt; CHUNK_SIZE:
+      raise OSError(f&#39;cannot write more than {CHUNK_SIZE} bytes at once&#39;)
+
+    # Check space in this chunk
+    availspace = len(self._write_buf.getvalue()) - self._write_buf.tell() - 1     # Why -1? Need room for end chunk byte
+    if len(b) &gt; len(availspace):
+      # No more room in the chunk, write the buffer out, which will allocate a new one
+      self._write_chunk()
+
+    # Write the bytes to the current chunk (may or may not have just been made)
+    self._write_buf.write(b) 
+    self.virtual_pos[1] += len(b)
+
+  def _write_header(self):
+    # If we&#39;re not at the start of the file, why are we writing a header?
+    if (self.raw.tell() != 0):
+      raise ValueError(&#34;attempted to write header while not at start of file&#34;)
+
+    # The first byte of the header indicates the compression method of the package, if any
+    self.raw.write(self._get_chunkprocessor()._typeCode)
+
+    # The next two bytes are zeroes and don&#39;t matter
+    self.raw.write(bytes([0, 0]))
+
+    # The fourth (last) byte of the header indicates the package version
+    self.raw.write(bytes([self.version]))
+
+    # Update the virtual position to indicate we&#39;re at position 4
+    self.virtual_pos[1] = 4
+
+  def _write_entry(self, entry):
+    # Write the entry&#39;s bytes to a temporary stream to figure out what the bytes are
+    entrystream = _BytesIO()
+    entrystream.write(entry.typeCode)
+    entry.write_to(entrystream)
+
+    # Write the entry&#39;s bytes to the &#34;actual&#34; stream
+    self.write(entrystream.getvalue())
+
+  def _write_chunk(self, closing=False):
+    # Write end-of-chunk or end-of-file
+    endbyte = ENTRY_CODE_END_OF_FILE if closing else ENTRY_CODE_END_OF_CHUNK
+    self._write_buf.write(endbyte)
+
+    # Write the current chunk to the file
+    self._get_chunkprocessor().write_chunk(self.raw, self._write_buf)
+
+    # Reset the write buffer to a blank state
+    self._reset_write_buf()
+
+    # Set the virtual position (chunk, pos_in_chunk) of the stream
+    self.virtual_pos[0] += 1
+    self.virtual_pos[1] = 0
+
+  def _reset_write_buf(self):
+    chunksize = CHUNK_SIZE - 4 if self.virtual_pos[0] == 0 else CHUNK_SIZE
+    self._write_buf = _BytesIO(bytes(chunksize))
+  #endregion
+
+  #region Random Access (disabled)
+  def seekable(self):
+    return False</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="deppth.sggpio.PackageIO" href="#deppth.sggpio.PackageIO">PackageIO</a></li>
+<li>io.IOBase</li>
+<li>_io._IOBase</li>
+<li><a title="deppth.utils.IOExtensionMixin" href="utils.html#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="deppth.sggpio.PackageWriter.seekable"><code class="name flex">
+<span>def <span class="ident">seekable</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return whether object supports random access.</p>
+<p>If False, seek(), tell() and truncate() will raise OSError.
+This method may need to do a test seek().</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def seekable(self):
+  return False</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="deppth.sggpio.PackageIO" href="#deppth.sggpio.PackageIO">PackageIO</a></b></code>:
+<ul class="hlist">
+<li><code><a title="deppth.sggpio.PackageIO.close" href="#deppth.sggpio.PackageIO.close">close</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.fileno" href="#deppth.sggpio.PackageIO.fileno">fileno</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.flush" href="#deppth.sggpio.PackageIO.flush">flush</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.is_eof" href="#deppth.sggpio.PackageIO.is_eof">is_eof</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.isatty" href="#deppth.sggpio.PackageIO.isatty">isatty</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read" href="#deppth.sggpio.PackageIO.read">read</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.read_7bit_encoded_int">read_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_big_string" href="utils.html#deppth.utils.IOExtensionMixin.read_big_string">read_big_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_entry" href="#deppth.sggpio.PackageIO.read_entry">read_entry</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_int" href="utils.html#deppth.utils.IOExtensionMixin.read_int">read_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_single" href="utils.html#deppth.utils.IOExtensionMixin.read_single">read_single</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_string" href="utils.html#deppth.utils.IOExtensionMixin.read_string">read_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.read_string_7b">read_string_7b</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.readable" href="#deppth.sggpio.PackageIO.readable">readable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.seek" href="#deppth.sggpio.PackageIO.seek">seek</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.tell" href="#deppth.sggpio.PackageIO.tell">tell</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.truncate" href="#deppth.sggpio.PackageIO.truncate">truncate</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.writable" href="#deppth.sggpio.PackageIO.writable">writable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write" href="#deppth.sggpio.PackageIO.write">write</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.write_7bit_encoded_int">write_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_big_string" href="utils.html#deppth.utils.IOExtensionMixin.write_big_string">write_big_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_int" href="utils.html#deppth.utils.IOExtensionMixin.write_int">write_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_single" href="utils.html#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_string" href="utils.html#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="deppth" href="index.html">deppth</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="deppth.sggpio.PackageIO" href="#deppth.sggpio.PackageIO">PackageIO</a></code></h4>
+<ul class="two-column">
+<li><code><a title="deppth.sggpio.PackageIO.close" href="#deppth.sggpio.PackageIO.close">close</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.closed" href="#deppth.sggpio.PackageIO.closed">closed</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.fileno" href="#deppth.sggpio.PackageIO.fileno">fileno</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.flush" href="#deppth.sggpio.PackageIO.flush">flush</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.is_eof" href="#deppth.sggpio.PackageIO.is_eof">is_eof</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.isatty" href="#deppth.sggpio.PackageIO.isatty">isatty</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read" href="#deppth.sggpio.PackageIO.read">read</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.read_entry" href="#deppth.sggpio.PackageIO.read_entry">read_entry</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.readable" href="#deppth.sggpio.PackageIO.readable">readable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.seek" href="#deppth.sggpio.PackageIO.seek">seek</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.tell" href="#deppth.sggpio.PackageIO.tell">tell</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.truncate" href="#deppth.sggpio.PackageIO.truncate">truncate</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.writable" href="#deppth.sggpio.PackageIO.writable">writable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageIO.write" href="#deppth.sggpio.PackageIO.write">write</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="deppth.sggpio.PackageReader" href="#deppth.sggpio.PackageReader">PackageReader</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.sggpio.PackageReader.load" href="#deppth.sggpio.PackageReader.load">load</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.load_package" href="#deppth.sggpio.PackageReader.load_package">load_package</a></code></li>
+<li><code><a title="deppth.sggpio.PackageReader.read" href="#deppth.sggpio.PackageReader.read">read</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="deppth.sggpio.PackageWithManifestReader" href="#deppth.sggpio.PackageWithManifestReader">PackageWithManifestReader</a></code></h4>
+</li>
+<li>
+<h4><code><a title="deppth.sggpio.PackageWriter" href="#deppth.sggpio.PackageWriter">PackageWriter</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.sggpio.PackageWriter.seekable" href="#deppth.sggpio.PackageWriter.seekable">seekable</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.1" />
+<title>deppth.utils API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>deppth.utils</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import sys
+import os
+import struct
+import io
+
+def requires(moduleName):
+    &#34;&#34;&#34;Marks a function as requiring an optional module dependency.&#34;&#34;&#34;
+    def decorate_function(fn):
+        def wrapper(*args, **kwargs):
+            if moduleName in sys.modules:
+                result = fn(*args, **kwargs)
+                return result
+            else:
+                raise ImportError(f&#39;{fn.__name__}: This action requires the {moduleName} module.&#39;)
+        return wrapper
+    return decorate_function
+
+class IOExtensionMixin():
+  &#34;&#34;&#34;Provides various helper functions to make reading packages from streams easier.&#34;&#34;&#34;
+  def is_eof(self):
+    &#34;&#34;&#34;Returns whether the stream is at EOF.&#34;&#34;&#34;
+    s = self.read(1)
+    if (s != b&#39;&#39;):
+      self.seek(-1, os.SEEK_CUR)
+    return s == b&#39;&#39;
+  
+  def read_string(self):
+    &#34;&#34;&#34;Reads an encoded string with max length 255.&#34;&#34;&#34;
+    length = int.from_bytes(self.read(1), byteorder=&#39;big&#39;)
+    stringBytes = self.read(length)
+    return stringBytes.decode(&#39;ascii&#39;)
+
+  def write_string(self, s):
+    &#34;&#34;&#34;Writes an encoded string with max length 255.&#34;&#34;&#34;
+    length = len(s)
+    if length &gt; 255:
+        raise Exception(f&#39;String exceeds maximum length for packing: {length}&#39;)
+    stringBytes = s.encode(&#39;ascii&#39;)
+    self.write(bytes([length]))
+    self.write(stringBytes)
+
+  def read_big_string(self):
+    &#34;&#34;&#34;Reads an encoded string with max length 2^32 - 1.&#34;&#34;&#34;
+    length = int.from_bytes(self.read(4), byteorder=&#39;big&#39;, signed=True)
+    stringBytes = self.read(length)
+    return stringBytes.decode(&#39;utf-8&#39;)
+
+  def write_big_string(self, s):
+    &#34;&#34;&#34;Writes an encoded string with max length 2^32 - 1.&#34;&#34;&#34;
+    length = len(s)
+    stringBytes = s.encode(&#39;utf-8&#39;)
+    self.write(length.to_bytes(4, &#39;big&#39;, signed=True))
+    self.write(stringBytes)
+
+  def read_int(self, byteorder=&#39;big&#39;, signed=True):
+    &#34;&#34;&#34;Reads a four-byte integer.&#34;&#34;&#34;
+    return int.from_bytes(self.read(4), byteorder=byteorder, signed=signed)
+
+  def write_int(self, n, byteorder=&#39;big&#39;, signed=True):
+    &#34;&#34;&#34;Writes a four-byte integer.&#34;&#34;&#34;
+    intBytes = n.to_bytes(4, byteorder, signed=signed)
+    self.write(intBytes)
+
+  def read_single(self):
+    &#34;&#34;&#34;Reads a single-floating-point number.&#34;&#34;&#34;
+    singleBytes = self.read(4)
+    return struct.unpack(&#39;&gt;f&#39;, singleBytes)[0]
+
+  def write_single(self, s):
+    &#34;&#34;&#34;Writes a single-floating-point number.&#34;&#34;&#34;
+    singleBytes = struct.pack(&#39;&gt;f&#39;, s)
+    self.write(singleBytes)
+
+  def read_7bit_encoded_int(self):
+    &#34;&#34;&#34;Reads a 7-bit-encoded number.
+    
+    7-bit-encoded numbers are encoded with the following algorithm:
+
+    - If the number fits in 7 bits (&lt; 128), write this byte and stop
+    - Otherwise, write the least significant 7 bits of the number,
+      and set the most significant bit of the byte to 1, then shift
+      the number to remove those bits and repeat.
+
+    The advantage of this encoding is it supports numbers of any size.
+    &#34;&#34;&#34;
+    result = 0
+    index = -1
+    while True:
+      index += 1
+      byte_value = ord(self.read(1))
+      result |= (byte_value &amp; 0x7f) &lt;&lt; (7 * index)
+      if byte_value &amp; 0x80 == 0:
+        break
+    return result
+
+  def write_7bit_encoded_int(self, n):
+    &#34;&#34;&#34;Writes a 7-bit-encoded number.
+    
+    See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+    &#34;&#34;&#34;
+    value = abs(n)
+    while value &gt;= 0x80:
+      self.write(bytes([(value | 0x80) &amp; 0xFF]))
+      value &gt;&gt;= 7
+    self.write(bytes([value &amp; 0xFF]))
+
+  def read_string_7b(self):
+    &#34;&#34;&#34;Reads a string prefixed with length as 7-bit-encoded data.
+    
+    See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+    &#34;&#34;&#34;
+    length = self.read_7bit_encoded_int()
+    stringBytes = self.read(length)
+    return stringBytes.decode(&#39;ascii&#39;)
+
+  def write_string_7b(self, s):
+    &#34;&#34;&#34;Writes a string prefixed with length as 7-bit-encoded data.
+    
+    See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+    &#34;&#34;&#34;
+    length = len(s)
+    stringBytes = s.encode(&#39;ascii&#39;)
+    self.write_7bit_encoded_int(length)
+    self.write(stringBytes)
+
+class BytesIO(io.BytesIO, IOExtensionMixin):
+    &#34;&#34;&#34;An enhanced version of BytesIO that includes additional functions.&#34;&#34;&#34;
+    pass
+
+
+class FileIO(io.FileIO, IOExtensionMixin):
+    &#34;&#34;&#34;An enhanced version of FileIO that includes additonal functions.&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="deppth.utils.requires"><code class="name flex">
+<span>def <span class="ident">requires</span></span>(<span>moduleName)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Marks a function as requiring an optional module dependency.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def requires(moduleName):
+    &#34;&#34;&#34;Marks a function as requiring an optional module dependency.&#34;&#34;&#34;
+    def decorate_function(fn):
+        def wrapper(*args, **kwargs):
+            if moduleName in sys.modules:
+                result = fn(*args, **kwargs)
+                return result
+            else:
+                raise ImportError(f&#39;{fn.__name__}: This action requires the {moduleName} module.&#39;)
+        return wrapper
+    return decorate_function</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="deppth.utils.BytesIO"><code class="flex name class">
+<span>class <span class="ident">BytesIO</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enhanced version of BytesIO that includes additional functions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BytesIO(io.BytesIO, IOExtensionMixin):
+    &#34;&#34;&#34;An enhanced version of BytesIO that includes additional functions.&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>_io.BytesIO</li>
+<li>_io._BufferedIOBase</li>
+<li>_io._IOBase</li>
+<li><a title="deppth.utils.IOExtensionMixin" href="#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="deppth.utils.IOExtensionMixin" href="#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></b></code>:
+<ul class="hlist">
+<li><code><a title="deppth.utils.IOExtensionMixin.is_eof" href="#deppth.utils.IOExtensionMixin.is_eof">is_eof</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_7bit_encoded_int" href="#deppth.utils.IOExtensionMixin.read_7bit_encoded_int">read_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_big_string" href="#deppth.utils.IOExtensionMixin.read_big_string">read_big_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_int" href="#deppth.utils.IOExtensionMixin.read_int">read_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_single" href="#deppth.utils.IOExtensionMixin.read_single">read_single</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_string" href="#deppth.utils.IOExtensionMixin.read_string">read_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_string_7b" href="#deppth.utils.IOExtensionMixin.read_string_7b">read_string_7b</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_7bit_encoded_int" href="#deppth.utils.IOExtensionMixin.write_7bit_encoded_int">write_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_big_string" href="#deppth.utils.IOExtensionMixin.write_big_string">write_big_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_int" href="#deppth.utils.IOExtensionMixin.write_int">write_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_single" href="#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_string" href="#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_string_7b" href="#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="deppth.utils.FileIO"><code class="flex name class">
+<span>class <span class="ident">FileIO</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enhanced version of FileIO that includes additonal functions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FileIO(io.FileIO, IOExtensionMixin):
+    &#34;&#34;&#34;An enhanced version of FileIO that includes additonal functions.&#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>_io.FileIO</li>
+<li>_io._RawIOBase</li>
+<li>_io._IOBase</li>
+<li><a title="deppth.utils.IOExtensionMixin" href="#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="deppth.utils.IOExtensionMixin" href="#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></b></code>:
+<ul class="hlist">
+<li><code><a title="deppth.utils.IOExtensionMixin.is_eof" href="#deppth.utils.IOExtensionMixin.is_eof">is_eof</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_7bit_encoded_int" href="#deppth.utils.IOExtensionMixin.read_7bit_encoded_int">read_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_big_string" href="#deppth.utils.IOExtensionMixin.read_big_string">read_big_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_int" href="#deppth.utils.IOExtensionMixin.read_int">read_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_single" href="#deppth.utils.IOExtensionMixin.read_single">read_single</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_string" href="#deppth.utils.IOExtensionMixin.read_string">read_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_string_7b" href="#deppth.utils.IOExtensionMixin.read_string_7b">read_string_7b</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_7bit_encoded_int" href="#deppth.utils.IOExtensionMixin.write_7bit_encoded_int">write_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_big_string" href="#deppth.utils.IOExtensionMixin.write_big_string">write_big_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_int" href="#deppth.utils.IOExtensionMixin.write_int">write_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_single" href="#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_string" href="#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_string_7b" href="#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin"><code class="flex name class">
+<span>class <span class="ident">IOExtensionMixin</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Provides various helper functions to make reading packages from streams easier.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class IOExtensionMixin():
+  &#34;&#34;&#34;Provides various helper functions to make reading packages from streams easier.&#34;&#34;&#34;
+  def is_eof(self):
+    &#34;&#34;&#34;Returns whether the stream is at EOF.&#34;&#34;&#34;
+    s = self.read(1)
+    if (s != b&#39;&#39;):
+      self.seek(-1, os.SEEK_CUR)
+    return s == b&#39;&#39;
+  
+  def read_string(self):
+    &#34;&#34;&#34;Reads an encoded string with max length 255.&#34;&#34;&#34;
+    length = int.from_bytes(self.read(1), byteorder=&#39;big&#39;)
+    stringBytes = self.read(length)
+    return stringBytes.decode(&#39;ascii&#39;)
+
+  def write_string(self, s):
+    &#34;&#34;&#34;Writes an encoded string with max length 255.&#34;&#34;&#34;
+    length = len(s)
+    if length &gt; 255:
+        raise Exception(f&#39;String exceeds maximum length for packing: {length}&#39;)
+    stringBytes = s.encode(&#39;ascii&#39;)
+    self.write(bytes([length]))
+    self.write(stringBytes)
+
+  def read_big_string(self):
+    &#34;&#34;&#34;Reads an encoded string with max length 2^32 - 1.&#34;&#34;&#34;
+    length = int.from_bytes(self.read(4), byteorder=&#39;big&#39;, signed=True)
+    stringBytes = self.read(length)
+    return stringBytes.decode(&#39;utf-8&#39;)
+
+  def write_big_string(self, s):
+    &#34;&#34;&#34;Writes an encoded string with max length 2^32 - 1.&#34;&#34;&#34;
+    length = len(s)
+    stringBytes = s.encode(&#39;utf-8&#39;)
+    self.write(length.to_bytes(4, &#39;big&#39;, signed=True))
+    self.write(stringBytes)
+
+  def read_int(self, byteorder=&#39;big&#39;, signed=True):
+    &#34;&#34;&#34;Reads a four-byte integer.&#34;&#34;&#34;
+    return int.from_bytes(self.read(4), byteorder=byteorder, signed=signed)
+
+  def write_int(self, n, byteorder=&#39;big&#39;, signed=True):
+    &#34;&#34;&#34;Writes a four-byte integer.&#34;&#34;&#34;
+    intBytes = n.to_bytes(4, byteorder, signed=signed)
+    self.write(intBytes)
+
+  def read_single(self):
+    &#34;&#34;&#34;Reads a single-floating-point number.&#34;&#34;&#34;
+    singleBytes = self.read(4)
+    return struct.unpack(&#39;&gt;f&#39;, singleBytes)[0]
+
+  def write_single(self, s):
+    &#34;&#34;&#34;Writes a single-floating-point number.&#34;&#34;&#34;
+    singleBytes = struct.pack(&#39;&gt;f&#39;, s)
+    self.write(singleBytes)
+
+  def read_7bit_encoded_int(self):
+    &#34;&#34;&#34;Reads a 7-bit-encoded number.
+    
+    7-bit-encoded numbers are encoded with the following algorithm:
+
+    - If the number fits in 7 bits (&lt; 128), write this byte and stop
+    - Otherwise, write the least significant 7 bits of the number,
+      and set the most significant bit of the byte to 1, then shift
+      the number to remove those bits and repeat.
+
+    The advantage of this encoding is it supports numbers of any size.
+    &#34;&#34;&#34;
+    result = 0
+    index = -1
+    while True:
+      index += 1
+      byte_value = ord(self.read(1))
+      result |= (byte_value &amp; 0x7f) &lt;&lt; (7 * index)
+      if byte_value &amp; 0x80 == 0:
+        break
+    return result
+
+  def write_7bit_encoded_int(self, n):
+    &#34;&#34;&#34;Writes a 7-bit-encoded number.
+    
+    See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+    &#34;&#34;&#34;
+    value = abs(n)
+    while value &gt;= 0x80:
+      self.write(bytes([(value | 0x80) &amp; 0xFF]))
+      value &gt;&gt;= 7
+    self.write(bytes([value &amp; 0xFF]))
+
+  def read_string_7b(self):
+    &#34;&#34;&#34;Reads a string prefixed with length as 7-bit-encoded data.
+    
+    See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+    &#34;&#34;&#34;
+    length = self.read_7bit_encoded_int()
+    stringBytes = self.read(length)
+    return stringBytes.decode(&#39;ascii&#39;)
+
+  def write_string_7b(self, s):
+    &#34;&#34;&#34;Writes a string prefixed with length as 7-bit-encoded data.
+    
+    See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+    &#34;&#34;&#34;
+    length = len(s)
+    stringBytes = s.encode(&#39;ascii&#39;)
+    self.write_7bit_encoded_int(length)
+    self.write(stringBytes)</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="deppth.sggpio.PackageIO" href="sggpio.html#deppth.sggpio.PackageIO">PackageIO</a></li>
+<li><a title="deppth.utils.BytesIO" href="#deppth.utils.BytesIO">BytesIO</a></li>
+<li><a title="deppth.utils.FileIO" href="#deppth.utils.FileIO">FileIO</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="deppth.utils.IOExtensionMixin.is_eof"><code class="name flex">
+<span>def <span class="ident">is_eof</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns whether the stream is at EOF.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_eof(self):
+  &#34;&#34;&#34;Returns whether the stream is at EOF.&#34;&#34;&#34;
+  s = self.read(1)
+  if (s != b&#39;&#39;):
+    self.seek(-1, os.SEEK_CUR)
+  return s == b&#39;&#39;</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.read_7bit_encoded_int"><code class="name flex">
+<span>def <span class="ident">read_7bit_encoded_int</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads a 7-bit-encoded number.</p>
+<p>7-bit-encoded numbers are encoded with the following algorithm:</p>
+<ul>
+<li>If the number fits in 7 bits (&lt; 128), write this byte and stop</li>
+<li>Otherwise, write the least significant 7 bits of the number,
+and set the most significant bit of the byte to 1, then shift
+the number to remove those bits and repeat.</li>
+</ul>
+<p>The advantage of this encoding is it supports numbers of any size.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_7bit_encoded_int(self):
+  &#34;&#34;&#34;Reads a 7-bit-encoded number.
+  
+  7-bit-encoded numbers are encoded with the following algorithm:
+
+  - If the number fits in 7 bits (&lt; 128), write this byte and stop
+  - Otherwise, write the least significant 7 bits of the number,
+    and set the most significant bit of the byte to 1, then shift
+    the number to remove those bits and repeat.
+
+  The advantage of this encoding is it supports numbers of any size.
+  &#34;&#34;&#34;
+  result = 0
+  index = -1
+  while True:
+    index += 1
+    byte_value = ord(self.read(1))
+    result |= (byte_value &amp; 0x7f) &lt;&lt; (7 * index)
+    if byte_value &amp; 0x80 == 0:
+      break
+  return result</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.read_big_string"><code class="name flex">
+<span>def <span class="ident">read_big_string</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads an encoded string with max length 2^32 - 1.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_big_string(self):
+  &#34;&#34;&#34;Reads an encoded string with max length 2^32 - 1.&#34;&#34;&#34;
+  length = int.from_bytes(self.read(4), byteorder=&#39;big&#39;, signed=True)
+  stringBytes = self.read(length)
+  return stringBytes.decode(&#39;utf-8&#39;)</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.read_int"><code class="name flex">
+<span>def <span class="ident">read_int</span></span>(<span>self, byteorder='big', signed=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads a four-byte integer.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_int(self, byteorder=&#39;big&#39;, signed=True):
+  &#34;&#34;&#34;Reads a four-byte integer.&#34;&#34;&#34;
+  return int.from_bytes(self.read(4), byteorder=byteorder, signed=signed)</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.read_single"><code class="name flex">
+<span>def <span class="ident">read_single</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads a single-floating-point number.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_single(self):
+  &#34;&#34;&#34;Reads a single-floating-point number.&#34;&#34;&#34;
+  singleBytes = self.read(4)
+  return struct.unpack(&#39;&gt;f&#39;, singleBytes)[0]</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.read_string"><code class="name flex">
+<span>def <span class="ident">read_string</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads an encoded string with max length 255.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_string(self):
+  &#34;&#34;&#34;Reads an encoded string with max length 255.&#34;&#34;&#34;
+  length = int.from_bytes(self.read(1), byteorder=&#39;big&#39;)
+  stringBytes = self.read(length)
+  return stringBytes.decode(&#39;ascii&#39;)</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.read_string_7b"><code class="name flex">
+<span>def <span class="ident">read_string_7b</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Reads a string prefixed with length as 7-bit-encoded data.</p>
+<p>See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_string_7b(self):
+  &#34;&#34;&#34;Reads a string prefixed with length as 7-bit-encoded data.
+  
+  See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+  &#34;&#34;&#34;
+  length = self.read_7bit_encoded_int()
+  stringBytes = self.read(length)
+  return stringBytes.decode(&#39;ascii&#39;)</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.write_7bit_encoded_int"><code class="name flex">
+<span>def <span class="ident">write_7bit_encoded_int</span></span>(<span>self, n)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes a 7-bit-encoded number.</p>
+<p>See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_7bit_encoded_int(self, n):
+  &#34;&#34;&#34;Writes a 7-bit-encoded number.
+  
+  See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+  &#34;&#34;&#34;
+  value = abs(n)
+  while value &gt;= 0x80:
+    self.write(bytes([(value | 0x80) &amp; 0xFF]))
+    value &gt;&gt;= 7
+  self.write(bytes([value &amp; 0xFF]))</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.write_big_string"><code class="name flex">
+<span>def <span class="ident">write_big_string</span></span>(<span>self, s)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes an encoded string with max length 2^32 - 1.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_big_string(self, s):
+  &#34;&#34;&#34;Writes an encoded string with max length 2^32 - 1.&#34;&#34;&#34;
+  length = len(s)
+  stringBytes = s.encode(&#39;utf-8&#39;)
+  self.write(length.to_bytes(4, &#39;big&#39;, signed=True))
+  self.write(stringBytes)</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.write_int"><code class="name flex">
+<span>def <span class="ident">write_int</span></span>(<span>self, n, byteorder='big', signed=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes a four-byte integer.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_int(self, n, byteorder=&#39;big&#39;, signed=True):
+  &#34;&#34;&#34;Writes a four-byte integer.&#34;&#34;&#34;
+  intBytes = n.to_bytes(4, byteorder, signed=signed)
+  self.write(intBytes)</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.write_single"><code class="name flex">
+<span>def <span class="ident">write_single</span></span>(<span>self, s)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes a single-floating-point number.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_single(self, s):
+  &#34;&#34;&#34;Writes a single-floating-point number.&#34;&#34;&#34;
+  singleBytes = struct.pack(&#39;&gt;f&#39;, s)
+  self.write(singleBytes)</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.write_string"><code class="name flex">
+<span>def <span class="ident">write_string</span></span>(<span>self, s)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes an encoded string with max length 255.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_string(self, s):
+  &#34;&#34;&#34;Writes an encoded string with max length 255.&#34;&#34;&#34;
+  length = len(s)
+  if length &gt; 255:
+      raise Exception(f&#39;String exceeds maximum length for packing: {length}&#39;)
+  stringBytes = s.encode(&#39;ascii&#39;)
+  self.write(bytes([length]))
+  self.write(stringBytes)</code></pre>
+</details>
+</dd>
+<dt id="deppth.utils.IOExtensionMixin.write_string_7b"><code class="name flex">
+<span>def <span class="ident">write_string_7b</span></span>(<span>self, s)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Writes a string prefixed with length as 7-bit-encoded data.</p>
+<p>See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_string_7b(self, s):
+  &#34;&#34;&#34;Writes a string prefixed with length as 7-bit-encoded data.
+  
+  See read_7bit_encoded_int for more information on what a 7-bit-encoded numbers.
+  &#34;&#34;&#34;
+  length = len(s)
+  stringBytes = s.encode(&#39;ascii&#39;)
+  self.write_7bit_encoded_int(length)
+  self.write(stringBytes)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="deppth" href="index.html">deppth</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="deppth.utils.requires" href="#deppth.utils.requires">requires</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="deppth.utils.BytesIO" href="#deppth.utils.BytesIO">BytesIO</a></code></h4>
+</li>
+<li>
+<h4><code><a title="deppth.utils.FileIO" href="#deppth.utils.FileIO">FileIO</a></code></h4>
+</li>
+<li>
+<h4><code><a title="deppth.utils.IOExtensionMixin" href="#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.utils.IOExtensionMixin.is_eof" href="#deppth.utils.IOExtensionMixin.is_eof">is_eof</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_7bit_encoded_int" href="#deppth.utils.IOExtensionMixin.read_7bit_encoded_int">read_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_big_string" href="#deppth.utils.IOExtensionMixin.read_big_string">read_big_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_int" href="#deppth.utils.IOExtensionMixin.read_int">read_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_single" href="#deppth.utils.IOExtensionMixin.read_single">read_single</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_string" href="#deppth.utils.IOExtensionMixin.read_string">read_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.read_string_7b" href="#deppth.utils.IOExtensionMixin.read_string_7b">read_string_7b</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_7bit_encoded_int" href="#deppth.utils.IOExtensionMixin.write_7bit_encoded_int">write_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_big_string" href="#deppth.utils.IOExtensionMixin.write_big_string">write_big_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_int" href="#deppth.utils.IOExtensionMixin.write_int">write_int</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_single" href="#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_string" href="#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
+<li><code><a title="deppth.utils.IOExtensionMixin.write_string_7b" href="#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+</footer>
+</body>
+</html>
