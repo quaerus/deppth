@@ -3,7 +3,7 @@ import os
 
 from .compression import get_chunkprocessor, get_chunkprocessor_by_name
 from .utils import IOExtensionMixin as _IOExtensionMixin, FileIO as _FileIO, BytesIO as _BytesIO
-from .entries import get_entry
+from .entries import get_entry, import_entry
 
 #region Constants
 CHUNK_SIZE = 0x2000000              # The size of uncompressed chunks in packages
@@ -444,7 +444,7 @@ class PackageReader(PackageIO):
 class PackageWriter(PackageIO):
   #region Constructor
   def __init__(self, name, closefd=True, opener=None, compressor='uncompressed', version=PACKAGE_VERSION_HADES, is_manifest=False):
-    super().__init__(name, closefd, opener, compressor, version, is_manifest)
+    super().__init__(name, 'w', closefd, opener, compressor, version, is_manifest)
 
     # Initialize the write buffer
     self._reset_write_buf()
@@ -467,7 +467,7 @@ class PackageWriter(PackageIO):
 
     # Check space in this chunk
     availspace = len(self._write_buf.getvalue()) - self._write_buf.tell() - 1     # Why -1? Need room for end chunk byte
-    if len(b) > len(availspace):
+    if len(b) > availspace:
       # No more room in the chunk, write the buffer out, which will allocate a new one
       self._write_chunk()
 
@@ -492,7 +492,7 @@ class PackageWriter(PackageIO):
     # Update the virtual position to indicate we're at position 4
     self.virtual_pos[1] = 4
 
-  def _write_entry(self, entry):
+  def write_entry(self, entry):
     # Write the entry's bytes to a temporary stream to figure out what the bytes are
     entrystream = _BytesIO()
     entrystream.write(entry.typeCode)
@@ -506,8 +506,15 @@ class PackageWriter(PackageIO):
     endbyte = ENTRY_CODE_END_OF_FILE if closing else ENTRY_CODE_END_OF_CHUNK
     self._write_buf.write(endbyte)
 
+    # If we're writing compressed, we need to write the whole chunk. But if not, we can strip off the extra null bytes.
+    chunk = ""
+    if self.compressor != 'uncompressed':
+      chunk = self._write_buf.getvalue()
+    else:
+      chunk = self._write_buf.getvalue()[:self._write_buf.tell()]
+
     # Write the current chunk to the file
-    self._get_chunkprocessor().write_chunk(self.raw, self._write_buf)
+    self._get_chunkprocessor().write_chunk(self.raw, chunk)
 
     # Reset the write buffer to a blank state
     self._reset_write_buf()

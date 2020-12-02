@@ -64,6 +64,17 @@ These folders may contain subfolders organizing the output. I recommend just try
 
     deppth ex ZeusUpgrade -s
 
+### Pack (pk)
+
+    deppth pack -s source_dir -t pkg_path
+
+Packs a directory into a package.
+
+*source_dir*: The path to a folder containing the output of a previous extract
+*pkg_path*: File to create. Should include the .pkg extension. Will also create a .pkg_manifest to go with it
+
+The idea would be to run extract, then edit the files, then run pack on the folder created by extract.
+
  ## SGGPIO
 
 The public interface for this is not quite ready for consumption yet, so this space is mostly blank for now. I'm working on it, I promise! In the meantime, check out the source code and documentation (download the docs folder and open sggpio.html in a browser) for an idea of what this can do.

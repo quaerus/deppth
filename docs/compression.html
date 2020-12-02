@@ -42,7 +42,7 @@ def chunkprocessor(typeName, typeCode):
   &#34;&#34;&#34;Decorates a subclass of ChunkProcessorBase to register its name and byte code.
 
   This makes the class discoverable by the chunk reading code to find the 
-  correct subclass to read and (possibly) decompress chunks of dat from
+  correct subclass to read and (possibly) decompress chunks of data from
   the stream.
   &#34;&#34;&#34;
   def decorate_entry(cls):
@@ -52,6 +52,7 @@ def chunkprocessor(typeName, typeCode):
       _chunk_processors[typeCode] = class_wrapper
       _chunk_processors_by_name[typeName] = class_wrapper
       class_wrapper._typeCode = typeCode
+      cls._typeCode = typeCode
     return class_wrapper
   return decorate_entry
 
@@ -188,9 +189,8 @@ class _CompressedChunkProcessor(_ChunkProcessorBase):
     &#34;&#34;&#34;Decompresses the given chunk, zero-filling to chunk_size.&#34;&#34;&#34;
     pass
 
-
-@chunkprocessor(&#39;lz4&#39;, b&#39;\x20&#39;)
 @requires(&#39;lz4&#39;)
+@chunkprocessor(&#39;lz4&#39;, b&#39;\x20&#39;)
 class _Lz4ChunkProcessor(_CompressedChunkProcessor):
   &#34;&#34;&#34;Chunk processor for LZ4-compressed packages.
 
@@ -205,9 +205,8 @@ class _Lz4ChunkProcessor(_CompressedChunkProcessor):
     &#34;&#34;&#34;Decompresses an LZ4-compressed block of data, zero-filling to chunk_size.&#34;&#34;&#34;
     return lz4.block.decompress(chunk, uncompressed_size=chunk_size).ljust(chunk_size, b&#39;\x00&#39;)
 
-
-@chunkprocessor(&#39;lzf&#39;, b&#39;\x40&#39;)
 @requires(&#39;lzf&#39;)
+@chunkprocessor(&#39;lzf&#39;, b&#39;\x40&#39;)
 class _LzfChunkProcessor(_CompressedChunkProcessor):
   &#34;&#34;&#34;Chunk processor for LZF-compressed packages.
 
@@ -221,7 +220,25 @@ class _LzfChunkProcessor(_CompressedChunkProcessor):
   def decompress(self, chunk, chunk_size):
     &#34;&#34;&#34;Decompresses an LZF-compressed block of data, zero-filling to chunk_size.&#34;&#34;&#34;
     return lzf.decompress(chunk, chunk_size).ljust(chunk_size, b&#39;\x00&#39;)
-#endregion</code></pre>
+#endregion
+
+
+@chunkprocessor(&#39;lzx&#39;, b&#39;\x60&#39;)
+class _LzxChunkProcessor(_CompressedChunkProcessor):
+  &#34;&#34;&#34;Chunk processor for LZX-compressed data.
+
+  LZX is not actually used to compress packages, but can be used to compress
+  XNB data. This class is provided as a consistent interface for that compression.
+
+  This mode of compression is not yet implemented.
+  &#34;&#34;&#34;
+  def compress(self, chunk):
+    &#34;&#34;&#34;Compresses a block of data using LZX compression.&#34;&#34;&#34;
+    raise NotImplementedError(&#39;LZX compression is not yet implemented&#39;)
+
+  def decompress(self, chunk, chunk_size):
+    &#34;&#34;&#34;Decompresses an LZX-compressed block of data.&#34;&#34;&#34;
+    raise NotImplementedError(&#39;LZX decompression is not yet implemented&#39;)</code></pre>
 </details>
 </section>
 <section>
@@ -237,7 +254,7 @@ class _LzfChunkProcessor(_CompressedChunkProcessor):
 <dd>
 <div class="desc"><p>Decorates a subclass of ChunkProcessorBase to register its name and byte code.</p>
 <p>This makes the class discoverable by the chunk reading code to find the
-correct subclass to read and (possibly) decompress chunks of dat from
+correct subclass to read and (possibly) decompress chunks of data from
 the stream.</p></div>
 <details class="source">
 <summary>
@@ -247,7 +264,7 @@ the stream.</p></div>
   &#34;&#34;&#34;Decorates a subclass of ChunkProcessorBase to register its name and byte code.
 
   This makes the class discoverable by the chunk reading code to find the 
-  correct subclass to read and (possibly) decompress chunks of dat from
+  correct subclass to read and (possibly) decompress chunks of data from
   the stream.
   &#34;&#34;&#34;
   def decorate_entry(cls):
@@ -257,6 +274,7 @@ the stream.</p></div>
       _chunk_processors[typeCode] = class_wrapper
       _chunk_processors_by_name[typeName] = class_wrapper
       class_wrapper._typeCode = typeCode
+      cls._typeCode = typeCode
     return class_wrapper
   return decorate_entry</code></pre>
 </details>

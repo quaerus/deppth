@@ -11,6 +11,17 @@ _entry_types = {}                   # Stores a mapping of known entry types from
 def get_entry(b, stream, is_manifest=False):
   return _entry_types[b](stream, isManifest=is_manifest)
 
+def import_entry(filename):
+  if filename.endswith(".atlas.json"):
+    entry = AtlasEntry()
+    entry.import_file(filename)
+    return entry
+  elif filename.endswith(".png"):
+    entry = TextureEntry()
+    entry.import_file(filename)
+    return entry
+  return None
+
 def entry(typeName, typeCode):
   """Decorates a subclass of EntryBase to register its name and byte code.
   
@@ -18,8 +29,8 @@ def entry(typeName, typeCode):
   correct subclass to read the entry's data from the stream.
   """
   def decorate_entry(cls):
-    cls._typeName = typeName
-    cls._typeCode = typeCode
+    cls.typeName = typeName
+    cls.typeCode = typeCode
     if typeCode:
       _entry_types[typeCode] = cls
     return cls
@@ -259,26 +270,63 @@ class TextureEntry(XNBAssetEntryBase):
       dataio.read_7bit_encoded_int()
 
     imgformat = dataio.read_int('little')
-    size = (dataio.read_int('little'), dataio.read_int('little'))
+    self.imgsize = (dataio.read_int('little'), dataio.read_int('little'))
     dataio.read_int('little')  # mip level, it should always be 1
     numbytes = dataio.read_int('little')
     imgbytes = dataio.read(numbytes)
     if imgformat == 0:
-      image = PIL.Image.frombytes('RGBA', size, imgbytes, 'raw', 'BGRA')
+      image = PIL.Image.frombytes('RGBA', self.imgsize, imgbytes, 'raw', 'BGRA')
     elif imgformat == 6:
-      image = PIL.Image.frombytes('RGBA', size, imgbytes, 'bcn', (3,))
+      image = PIL.Image.frombytes('RGBA', self.imgsize, imgbytes, 'bcn', (3,))
     elif imgformat == 28:
-      image = PIL.Image.frombytes('RGBA', size, imgbytes, 'bcn', (7,))
+      image = PIL.Image.frombytes('RGBA', self.imgsize, imgbytes, 'bcn', (7,))
     else:
       raise Exception(f'Unsupported image format {imgformat}')
     return image
   
+  @requires('PIL.Image')
+  def _import_image_data(self, path):
+    image = PIL.Image.open(path)
+
+    dataio = _BytesIO()
+    xnb_inner_data = self._create_inner_xnb(image)
+
+    # Write the XNB 'magic' header
+    dataio.write(bytes('XNBw', 'ascii'))
+
+    # Write the XNB version number, which for now is always 6
+    dataio.write(b'\x06')
+
+    # Write a hard-coded 0 for flags
+    dataio.write(b'\x00')
+
+    # Write the file size (inner length plus 10 for the header)
+    dataio.write_int(len(xnb_inner_data) + 10, 'little')
+
+    # Write the payload
+    dataio.write(xnb_inner_data)
+
+    self.data = dataio.getvalue()
+    self.size = len(self.data)
+  
+  @requires('PIL.Image')
+  def _create_inner_xnb(self, image):
+    dataio = _BytesIO()
+    dataio.write_int(0, 'little') # Format for now is always 0
+    dataio.write_int(image.width, 'little')
+    dataio.write_int(image.height, 'little')
+    dataio.write_int(1, 'little')
+    imgbytes = image.convert('RGBA').tobytes('raw', 'BGRA', 0, 1)
+    dataio.write_int(len(imgbytes), 'little')
+    dataio.write(imgbytes)
+    return dataio.getvalue()
+
   def import_file(self, path):
     # If the user didn't give a supported image format, don't import here
     if os.path.splitext(path)[1] not in ['.png', '.jpg', '.bmp']:
       return super()._import(path)
 
-    raise NotImplementedError("Not implemented yet")
+    self._import_image_data(path)
 
   def _unpack(self, path):
     # Make a directory to hold the contents
@@ -457,6 +505,7 @@ class AtlasEntry(EntryBase):
       self.isReference = False
       self.includedTexture = TextureEntry(stream, False, version)
       self.name = self.includedTexture.name
+      self.referencedTextureName = ''
 
   def write_to(self, stream):
     contentsBytes = _BytesIO()
@@ -505,6 +554,7 @@ class AtlasEntry(EntryBase):
       return super()._export(path)
 
     data = {
+      'name': self.name,
       'version': self.version, 
       'subAtlases': self.subAtlases,
       'isReference': self.isReference,
@@ -520,14 +570,17 @@ class AtlasEntry(EntryBase):
     path = os.path.join(target, 'manifest')
     os.makedirs(path, exist_ok=True)
     self._export(self._extraction_path(target) + '.atlas.json')
+    if not self.isReference:
+      self.includedTexture.extract(target, **kwargs)
 
   def _import(self, path):
-    # If the user didn't ask for a supported image format, then don't export
+    # If the user didn't ask for a supported format, then don't export in this way
     if os.path.splitext(path)[1] not in ['.json']:
-      return super()._export(path)
+      return super()._import(path)
 
     with open(path, "r") as json_file:
       data = json.load(json_file)
+      self.name = data['name']
       self.version = data['version']
       self.isReference = data['isReference']
       self.referencedTextureName = data['referencedTextureName']
@@ -607,6 +660,7 @@ class IncludePackageEntry(EntryBase):
   def extract(self, target, **kwargs):
     if 'includes' in kwargs:
       kwargs['includes'].append(self.name)
+
 
 @entry('spine', b'\xF0')
 class SpineEntry(EntryBase):

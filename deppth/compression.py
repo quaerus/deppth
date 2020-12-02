@@ -14,7 +14,7 @@ def chunkprocessor(typeName, typeCode):
   """Decorates a subclass of ChunkProcessorBase to register its name and byte code.
 
   This makes the class discoverable by the chunk reading code to find the 
-  correct subclass to read and (possibly) decompress chunks of dat from
+  correct subclass to read and (possibly) decompress chunks of data from
   the stream.
   """
   def decorate_entry(cls):
@@ -24,6 +24,7 @@ def chunkprocessor(typeName, typeCode):
       _chunk_processors[typeCode] = class_wrapper
       _chunk_processors_by_name[typeName] = class_wrapper
       class_wrapper._typeCode = typeCode
+      cls._typeCode = typeCode
     return class_wrapper
   return decorate_entry
 
@@ -160,9 +161,8 @@ class _CompressedChunkProcessor(_ChunkProcessorBase):
     """Decompresses the given chunk, zero-filling to chunk_size."""
     pass
 
-
-@chunkprocessor('lz4', b'\x20')
 @requires('lz4')
+@chunkprocessor('lz4', b'\x20')
 class _Lz4ChunkProcessor(_CompressedChunkProcessor):
   """Chunk processor for LZ4-compressed packages.
 
@@ -177,9 +177,8 @@ class _Lz4ChunkProcessor(_CompressedChunkProcessor):
     """Decompresses an LZ4-compressed block of data, zero-filling to chunk_size."""
     return lz4.block.decompress(chunk, uncompressed_size=chunk_size).ljust(chunk_size, b'\x00')
 
-
-@chunkprocessor('lzf', b'\x40')
 @requires('lzf')
+@chunkprocessor('lzf', b'\x40')
 class _LzfChunkProcessor(_CompressedChunkProcessor):
   """Chunk processor for LZF-compressed packages.
 
@@ -195,3 +194,20 @@ class _LzfChunkProcessor(_CompressedChunkProcessor):
     return lzf.decompress(chunk, chunk_size).ljust(chunk_size, b'\x00')
 #endregion
 
+
+@chunkprocessor('lzx', b'\x60')
+class _LzxChunkProcessor(_CompressedChunkProcessor):
+  """Chunk processor for LZX-compressed data.
+
+  LZX is not actually used to compress packages, but can be used to compress
+  XNB data. This class is provided as a consistent interface for that compression.
+
+  This mode of compression is not yet implemented.
+  """
+  def compress(self, chunk):
+    """Compresses a block of data using LZX compression."""
+    raise NotImplementedError('LZX compression is not yet implemented')
+
+  def decompress(self, chunk, chunk_size):
+    """Decompresses an LZX-compressed block of data."""
+    raise NotImplementedError('LZX decompression is not yet implemented')

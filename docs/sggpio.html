@@ -31,7 +31,7 @@ import os
 
 from .compression import get_chunkprocessor, get_chunkprocessor_by_name
 from .utils import IOExtensionMixin as _IOExtensionMixin, FileIO as _FileIO, BytesIO as _BytesIO
-from .entries import get_entry
+from .entries import get_entry, import_entry
 
 #region Constants
 CHUNK_SIZE = 0x2000000              # The size of uncompressed chunks in packages
@@ -472,7 +472,7 @@ class PackageReader(PackageIO):
 class PackageWriter(PackageIO):
   #region Constructor
   def __init__(self, name, closefd=True, opener=None, compressor=&#39;uncompressed&#39;, version=PACKAGE_VERSION_HADES, is_manifest=False):
-    super().__init__(name, closefd, opener, compressor, version, is_manifest)
+    super().__init__(name, &#39;w&#39;, closefd, opener, compressor, version, is_manifest)
 
     # Initialize the write buffer
     self._reset_write_buf()
@@ -495,7 +495,7 @@ class PackageWriter(PackageIO):
 
     # Check space in this chunk
     availspace = len(self._write_buf.getvalue()) - self._write_buf.tell() - 1     # Why -1? Need room for end chunk byte
-    if len(b) &gt; len(availspace):
+    if len(b) &gt; availspace:
       # No more room in the chunk, write the buffer out, which will allocate a new one
       self._write_chunk()
 
@@ -520,7 +520,7 @@ class PackageWriter(PackageIO):
     # Update the virtual position to indicate we&#39;re at position 4
     self.virtual_pos[1] = 4
 
-  def _write_entry(self, entry):
+  def write_entry(self, entry):
     # Write the entry&#39;s bytes to a temporary stream to figure out what the bytes are
     entrystream = _BytesIO()
     entrystream.write(entry.typeCode)
@@ -534,8 +534,15 @@ class PackageWriter(PackageIO):
     endbyte = ENTRY_CODE_END_OF_FILE if closing else ENTRY_CODE_END_OF_CHUNK
     self._write_buf.write(endbyte)
 
+    # If we&#39;re writing compressed, we need to write the whole chunk. But if not, we can strip off the extra null bytes.
+    chunk = &#34;&#34;
+    if self.compressor != &#39;uncompressed&#39;:
+      chunk = self._write_buf.getvalue()
+    else:
+      chunk = self._write_buf.getvalue()[:self._write_buf.tell()]
+
     # Write the current chunk to the file
-    self._get_chunkprocessor().write_chunk(self.raw, self._write_buf)
+    self._get_chunkprocessor().write_chunk(self.raw, chunk)
 
     # Reset the write buffer to a blank state
     self._reset_write_buf()
@@ -558,7 +565,10 @@ class PackageWriter(PackageIO):
 class PackageWithManifestReader(PackageReader):
   def __init__(self, name, closefd=True, opener=None, is_manifest=False):
     super().__init__(f&#39;{name}.pkg&#39;, closefd, opener, is_manifest)
-    self.manifest = PackageReader.load_package(f&#39;{name}.pkg_manifest&#39;)
+    if os.path.exists(f&#39;{name}.pkg_manifest&#39;):
+      self.manifest = PackageReader.load_package(f&#39;{name}.pkg_manifest&#39;)
+    else:
+      self.manifest = None
 
   def read_entry(self):
     entry = super().read_entry()
@@ -566,7 +576,7 @@ class PackageWithManifestReader(PackageReader):
       return None
 
     # Can we find a matching manifest entry?
-    if entry.name in self.manifest:
+    if self.manifest is not None and entry.name in self.manifest:
       entry.manifest_entry = self.manifest[entry.name]
 
     return entry</code></pre>
@@ -1546,7 +1556,10 @@ constants provide the correct values for this property</p></div>
 <pre><code class="python">class PackageWithManifestReader(PackageReader):
   def __init__(self, name, closefd=True, opener=None, is_manifest=False):
     super().__init__(f&#39;{name}.pkg&#39;, closefd, opener, is_manifest)
-    self.manifest = PackageReader.load_package(f&#39;{name}.pkg_manifest&#39;)
+    if os.path.exists(f&#39;{name}.pkg_manifest&#39;):
+      self.manifest = PackageReader.load_package(f&#39;{name}.pkg_manifest&#39;)
+    else:
+      self.manifest = None
 
   def read_entry(self):
     entry = super().read_entry()
@@ -1554,7 +1567,7 @@ constants provide the correct values for this property</p></div>
       return None
 
     # Can we find a matching manifest entry?
-    if entry.name in self.manifest:
+    if self.manifest is not None and entry.name in self.manifest:
       entry.manifest_entry = self.manifest[entry.name]
 
     return entry</code></pre>
@@ -1627,7 +1640,7 @@ constants provide the correct values for this property</p></div>
 <pre><code class="python">class PackageWriter(PackageIO):
   #region Constructor
   def __init__(self, name, closefd=True, opener=None, compressor=&#39;uncompressed&#39;, version=PACKAGE_VERSION_HADES, is_manifest=False):
-    super().__init__(name, closefd, opener, compressor, version, is_manifest)
+    super().__init__(name, &#39;w&#39;, closefd, opener, compressor, version, is_manifest)
 
     # Initialize the write buffer
     self._reset_write_buf()
@@ -1650,7 +1663,7 @@ constants provide the correct values for this property</p></div>
 
     # Check space in this chunk
     availspace = len(self._write_buf.getvalue()) - self._write_buf.tell() - 1     # Why -1? Need room for end chunk byte
-    if len(b) &gt; len(availspace):
+    if len(b) &gt; availspace:
       # No more room in the chunk, write the buffer out, which will allocate a new one
       self._write_chunk()
 
@@ -1675,7 +1688,7 @@ constants provide the correct values for this property</p></div>
     # Update the virtual position to indicate we&#39;re at position 4
     self.virtual_pos[1] = 4
 
-  def _write_entry(self, entry):
+  def write_entry(self, entry):
     # Write the entry&#39;s bytes to a temporary stream to figure out what the bytes are
     entrystream = _BytesIO()
     entrystream.write(entry.typeCode)
@@ -1689,8 +1702,15 @@ constants provide the correct values for this property</p></div>
     endbyte = ENTRY_CODE_END_OF_FILE if closing else ENTRY_CODE_END_OF_CHUNK
     self._write_buf.write(endbyte)
 
+    # If we&#39;re writing compressed, we need to write the whole chunk. But if not, we can strip off the extra null bytes.
+    chunk = &#34;&#34;
+    if self.compressor != &#39;uncompressed&#39;:
+      chunk = self._write_buf.getvalue()
+    else:
+      chunk = self._write_buf.getvalue()[:self._write_buf.tell()]
+
     # Write the current chunk to the file
-    self._get_chunkprocessor().write_chunk(self.raw, self._write_buf)
+    self._get_chunkprocessor().write_chunk(self.raw, chunk)
 
     # Reset the write buffer to a blank state
     self._reset_write_buf()
@@ -1730,6 +1750,25 @@ This method may need to do a test seek().</p></div>
 </summary>
 <pre><code class="python">def seekable(self):
   return False</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.PackageWriter.write_entry"><code class="name flex">
+<span>def <span class="ident">write_entry</span></span>(<span>self, entry)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_entry(self, entry):
+  # Write the entry&#39;s bytes to a temporary stream to figure out what the bytes are
+  entrystream = _BytesIO()
+  entrystream.write(entry.typeCode)
+  entry.write_to(entrystream)
+
+  # Write the entry&#39;s bytes to the &#34;actual&#34; stream
+  self.write(entrystream.getvalue())</code></pre>
 </details>
 </dd>
 </dl>
@@ -1816,6 +1855,7 @@ This method may need to do a test seek().</p></div>
 <h4><code><a title="deppth.sggpio.PackageWriter" href="#deppth.sggpio.PackageWriter">PackageWriter</a></code></h4>
 <ul class="">
 <li><code><a title="deppth.sggpio.PackageWriter.seekable" href="#deppth.sggpio.PackageWriter.seekable">seekable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.write_entry" href="#deppth.sggpio.PackageWriter.write_entry">write_entry</a></code></li>
 </ul>
 </li>
 </ul>

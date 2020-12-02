@@ -39,19 +39,30 @@ _entry_types = {}                   # Stores a mapping of known entry types from
 def get_entry(b, stream, is_manifest=False):
   return _entry_types[b](stream, isManifest=is_manifest)
 
+def import_entry(filename):
+  if filename.endswith(&#34;.atlas.json&#34;):
+    entry = AtlasEntry()
+    entry.import_file(filename)
+    return entry
+  elif filename.endswith(&#34;.png&#34;):
+    entry = TextureEntry()
+    entry.import_file(filename)
+    return entry
+  return None
+
 def entry(typeName, typeCode):
-    &#34;&#34;&#34;Decorates a subclass of EntryBase to register its name and byte code.
-    
-    This makes the class discoverable by the entry reading code to find the 
-    correct subclass to read the entry&#39;s data from the stream.
-    &#34;&#34;&#34;
-    def decorate_entry(cls):
-        cls._typeName = typeName
-        cls._typeCode = typeCode
-        if typeCode:
-            _entry_types[typeCode] = cls
-        return cls
-    return decorate_entry
+  &#34;&#34;&#34;Decorates a subclass of EntryBase to register its name and byte code.
+  
+  This makes the class discoverable by the entry reading code to find the 
+  correct subclass to read the entry&#39;s data from the stream.
+  &#34;&#34;&#34;
+  def decorate_entry(cls):
+    cls.typeName = typeName
+    cls.typeCode = typeCode
+    if typeCode:
+      _entry_types[typeCode] = cls
+    return cls
+  return decorate_entry
 
 class EntryBase(ABC):
   &#34;&#34;&#34;Base class for package entries.
@@ -110,6 +121,9 @@ class EntryBase(ABC):
     dispname = self.name
     return f&#39;{self.entry_type()}: {dispname}&#39;
 
+  def short_name(self):
+    return self.name.split(&#39;\\&#39;)[-1]
+
   def entry_type(self):
     &#34;&#34;&#34;Returns the type of entry this is as a human-readable string.&#34;&#34;&#34;
     return self._typeName
@@ -126,6 +140,19 @@ class EntryBase(ABC):
     &#34;&#34;&#34;
     if not self._export(path):
       raise NotImplementedError(f&#39;Unable to export file to this format: {path}&#39;)
+
+  def extract(self, target, **kwargs):
+    &#34;&#34;&#34;Extracts this entry from the package to the target directory.
+
+    This exports the asset as export_file might, but doesn&#39;t give the user choice
+    as to how that export is performed. This function is expected to create
+    one or more files in the directory given by target based on the name and
+    type of the entry.
+
+    If not overridden, this function will export a binary representation of the
+    entry to a .entry file.
+    &#34;&#34;&#34;
+    self._export(self._extraction_path(target) + &#39;.entry&#39;)
 
   def import_file(self, path):
     &#34;&#34;&#34;Imports this entry from a file.
@@ -160,6 +187,9 @@ class EntryBase(ABC):
       self.read_from(f)           # Read the remaining bytes
     return True
 
+  def _extraction_path(self, target):
+    return os.path.join(target, self.name.split(&#39;\\&#39;)[-1])
+
 
 class XNBAssetEntryBase(EntryBase):
   &#34;&#34;&#34;Represents a wrapped XNB asset in a package.
@@ -185,6 +215,9 @@ class XNBAssetEntryBase(EntryBase):
     dispname = self.name.split(&#39;\\&#39;)[-1]
     return f&#39;{self.entry_type()}: {dispname}&#39;
 
+  def extract(self, target, **kwargs):
+    self._export(self._extraction_path(target) + &#39;.xnb&#39;)
+
   def _export(self, path):
     if os.path.splitext(path)[1] != &#39;.xnb&#39;:
       return super()._export(path)
@@ -203,381 +236,490 @@ class XNBAssetEntryBase(EntryBase):
 
     return True
 
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;textures&#39;, self.name.split(&#39;\\&#39;)[-1])
+
 
 @entry(&#39;texture&#39;, b&#39;\xAD&#39;)
 class TextureEntry(XNBAssetEntryBase):
-    &#34;&#34;&#34;Represents a 2D Texture asset.
+  &#34;&#34;&#34;Represents a 2D Texture asset.
 
-    Texture entries comprise a majority of packages&#39; contents. These entries
-    are compiled spritesheets which are paired with an Atlas file in the
-    package&#39;s manifest to identify the various sprites contained within.
+  Texture entries comprise a majority of packages&#39; contents. These entries
+  are compiled spritesheets which are paired with an Atlas file in the
+  package&#39;s manifest to identify the various sprites contained within.
 
-    These entries can be exported to and imported from various image formats,
-    but doing so requires the pillow/PIL module.
-    &#34;&#34;&#34;
-    @requires(&#39;PIL.Image&#39;)
-    def _export(self, path):
-        # If the user didn&#39;t ask for a supported image format, then don&#39;t export
-        if os.path.splitext(path)[1] not in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.bmp&#39;]:
-            return super()._export(path)
+  These entries can be exported to and imported from various image formats,
+  but doing so requires the pillow/PIL module.
+  &#34;&#34;&#34;
+  def extract(self, target, **kwargs):
+    if &#39;subtextures&#39; in kwargs and kwargs[&#39;subtextures&#39;]:
+      self._export_subtextures(os.path.join(target, &#39;textures&#39;))
+    else:
+      os.makedirs(os.path.join(target, &#39;textures&#39;, &#39;atlases&#39;), exist_ok=True)
+      self._export(self._extraction_path(target) + &#39;.png&#39;)
 
-        self._get_image().save(path)
-        return True
+  @requires(&#39;PIL.Image&#39;)
+  def _export(self, path):
+    # If the user didn&#39;t ask for a supported image format, then don&#39;t export
+    if os.path.splitext(path)[1] not in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.bmp&#39;]:
+      return super()._export(path)
 
-    @requires(&#39;PIL.Image&#39;)
-    def _get_image(self):
-        dataio = _BytesIO(self.data)
+    self._get_image().save(path)
+    return True
 
-        # The first four bytes should be b&#39;XNBw&#39;
-        dataio.seek(4)
-        
-        # The next byte is the XNB Version number, which should be 5 or 6
-        xnbversion = ord(dataio.read(1))
-        if not xnbversion in [5, 6]:
-            raise ValueError(f&#39;Invalid XNB Version: {xnbversion}&#39;)
-        
-        # The next byte represents some flags, which we ignore, possibly at our peril. 
-        # If the flags aren&#39;t 0, bail. The data could be compressed
-        flags = dataio.read(1)
-        if flags != b&#39;\x00&#39;:
-            raise NotImplementedError(f&#39;Cannot export compressed XNB data. Flags: {flags}&#39;)
-        
-        # The next four bytes are the file length, but we don&#39;t actually use this right now
-        dataio.read(4)
+  @requires(&#39;PIL.Image&#39;)
+  def _get_image(self):
+    dataio = _BytesIO(self.data)
 
-        # For version 5 XNB&#39;s, there&#39;s some extra nonsense we can just skip past
-        if (xnbversion == 5):
-            num = dataio.read_7bit_encoded_int()
-            for _ in range(0, num):
-                dataio.read_string()
-                dataio.read_int(&#39;little&#39;)
-            dataio.read_7bit_encoded_int()
-            dataio.read_7bit_encoded_int()
-
-        imgformat = dataio.read_int(&#39;little&#39;)
-        size = (dataio.read_int(&#39;little&#39;), dataio.read_int(&#39;little&#39;))
-        dataio.read_int(&#39;little&#39;)  # mip level, it should always be 1
-        numbytes = dataio.read_int(&#39;little&#39;)
-        imgbytes = dataio.read(numbytes)
-        if imgformat == 0:
-            image = PIL.Image.frombytes(&#39;RGBA&#39;, size, imgbytes, &#39;raw&#39;, &#39;BGRA&#39;)
-        elif imgformat == 6:
-            image = PIL.Image.frombytes(&#39;RGBA&#39;, size, imgbytes, &#39;bcn&#39;, (3,))
-        elif imgformat == 28:
-            image = PIL.Image.frombytes(&#39;RGBA&#39;, size, imgbytes, &#39;bcn&#39;, (7,))
-        else:
-            raise Exception(f&#39;Unsupported image format {imgformat}&#39;)
-        return image
+    # The first four bytes should be b&#39;XNBw&#39;
+    dataio.seek(4)
     
-    def import_file(self, path):
-        # If the user didn&#39;t give a supported image format, don&#39;t import here
-        if os.path.splitext(path)[1] not in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.bmp&#39;]:
-            return super()._import(path)
+    # The next byte is the XNB Version number, which should be 5 or 6
+    xnbversion = ord(dataio.read(1))
+    if not xnbversion in [5, 6]:
+      raise ValueError(f&#39;Invalid XNB Version: {xnbversion}&#39;)
+    
+    # The next byte represents some flags, which we ignore, possibly at our peril. 
+    # If the flags aren&#39;t 0, bail. The data could be compressed
+    flags = dataio.read(1)
+    if flags != b&#39;\x00&#39;:
+      raise NotImplementedError(f&#39;Cannot export compressed XNB data. Flags: {flags}&#39;)
+    
+    # The next four bytes are the file length, but we don&#39;t actually use this right now
+    dataio.read(4)
 
-        raise NotImplementedError(&#34;Not implemented yet&#34;)
+    # For version 5 XNB&#39;s, there&#39;s some extra nonsense we can just skip past
+    if (xnbversion == 5):
+      num = dataio.read_7bit_encoded_int()
+      for _ in range(0, num):
+        dataio.read_string()
+        dataio.read_int(&#39;little&#39;)
+      dataio.read_7bit_encoded_int()
+      dataio.read_7bit_encoded_int()
 
-    def unpack(self, path):
-        # Make a directory to hold the contents
-        subpath = self.name.replace(&#39;\\&#39;, &#39;/&#39;)
-        fullpath = os.path.join(path, subpath)
-        os.makedirs(fullpath, exist_ok=True)
+    imgformat = dataio.read_int(&#39;little&#39;)
+    self.imgsize = (dataio.read_int(&#39;little&#39;), dataio.read_int(&#39;little&#39;))
+    dataio.read_int(&#39;little&#39;)  # mip level, it should always be 1
+    numbytes = dataio.read_int(&#39;little&#39;)
+    imgbytes = dataio.read(numbytes)
+    if imgformat == 0:
+      image = PIL.Image.frombytes(&#39;RGBA&#39;, self.imgsize, imgbytes, &#39;raw&#39;, &#39;BGRA&#39;)
+    elif imgformat == 6:
+      image = PIL.Image.frombytes(&#39;RGBA&#39;, self.imgsize, imgbytes, &#39;bcn&#39;, (3,))
+    elif imgformat == 28:
+      image = PIL.Image.frombytes(&#39;RGBA&#39;, self.imgsize, imgbytes, &#39;bcn&#39;, (7,))
+    else:
+      raise Exception(f&#39;Unsupported image format {imgformat}&#39;)
+    return image
+  
+  @requires(&#39;PIL.Image&#39;)
+  def _import_image_data(self, path):
+    image = PIL.Image.open(path)
 
-        # First, get the image out of the entry data
-        image = self._get_image()
-        atlas = self.manifest_entry
-        for subatlas in atlas.subAtlases:
-            rect = subatlas[&#39;rect&#39;]
-            box = (rect[&#39;x&#39;], 
-            rect[&#39;y&#39;], 
-            rect[&#39;x&#39;]+rect[&#39;width&#39;], 
-            rect[&#39;y&#39;]+rect[&#39;height&#39;])
-            subimage = image.crop(box)
-            subatlasdir, subatlasfile = os.path.split(subatlas[&#39;name&#39;])
-            os.makedirs(os.path.join(fullpath, subatlasdir), exist_ok=True)
-            subimage.save(os.path.join(fullpath, subatlasdir, f&#39;{subatlasfile}.png&#39;))
+    dataio = _BytesIO()
+    xnb_inner_data = self._create_inner_xnb(image)
+
+    # Write the XNB &#39;magic&#39; header
+    dataio.write(bytes(&#39;XNBw&#39;, &#39;ascii&#39;))
+
+    # Write the XNB version number, which for now is always 6
+    dataio.write(b&#39;\x06&#39;)
+
+    # Write a hard-coded 0 for flags
+    dataio.write(b&#39;\x00&#39;)
+
+    # Write the file size (inner length plus 10 for the header)
+    dataio.write_int(len(xnb_inner_data) + 10, &#39;little&#39;)
+
+    # Write the payload
+    dataio.write(xnb_inner_data)
+
+    self.data = dataio.getvalue()
+    self.size = len(self.data)
+  
+  @requires(&#39;PIL.Image&#39;)
+  def _create_inner_xnb(self, image):
+    dataio = _BytesIO()
+    dataio.write_int(0, &#39;little&#39;) # Format for now is always 0
+    dataio.write_int(image.width, &#39;little&#39;)
+    dataio.write_int(image.height, &#39;little&#39;)
+    dataio.write_int(1, &#39;little&#39;)
+    imgbytes = image.convert(&#39;RGBA&#39;).tobytes(&#39;raw&#39;, &#39;BGRA&#39;, 0, 1)
+    dataio.write_int(len(imgbytes), &#39;little&#39;)
+    dataio.write(imgbytes)
+    return dataio.getvalue()
+
+  def import_file(self, path):
+    # If the user didn&#39;t give a supported image format, don&#39;t import here
+    if os.path.splitext(path)[1] not in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.bmp&#39;]:
+      return super()._import(path)
+
+    self._import_image_data(path)
+
+  def _unpack(self, path):
+    # Make a directory to hold the contents
+    subpath = self.name.replace(&#39;\\&#39;, &#39;/&#39;)
+    fullpath = os.path.join(path, subpath)
+    os.makedirs(fullpath, exist_ok=True)
+
+    # First, get the image out of the entry data
+    image = self._get_image()
+    atlas = self.manifest_entry
+    for subatlas in atlas.subAtlases:
+      rect = subatlas[&#39;rect&#39;]
+      box = (rect[&#39;x&#39;], 
+      rect[&#39;y&#39;], 
+      rect[&#39;x&#39;]+rect[&#39;width&#39;], 
+      rect[&#39;y&#39;]+rect[&#39;height&#39;])
+      subimage = image.crop(box)
+      subatlasdir, subatlasfile = os.path.split(subatlas[&#39;name&#39;])
+      os.makedirs(os.path.join(fullpath, subatlasdir), exist_ok=True)
+      subimage.save(os.path.join(fullpath, subatlasdir, f&#39;{subatlasfile}.png&#39;))
+
+  @requires(&#39;PIL.Image&#39;)
+  def _export_subtextures(self, target):
+    # First, get the image out of the entry data
+    image = self._get_image()
+    atlas = self.manifest_entry
+    for subatlas in atlas.subAtlases:
+      rect = subatlas[&#39;rect&#39;]
+      box = (rect[&#39;x&#39;], 
+      rect[&#39;y&#39;], 
+      rect[&#39;x&#39;]+rect[&#39;width&#39;], 
+      rect[&#39;y&#39;]+rect[&#39;height&#39;])
+      subimage = image.crop(box)
+      subatlasdir, subatlasfile = os.path.split(subatlas[&#39;name&#39;])
+      os.makedirs(os.path.join(target, subatlasdir), exist_ok=True)
+      subimage.save(os.path.join(target, subatlasdir, f&#39;{subatlasfile}.png&#39;))
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;textures&#39;, &#39;atlases&#39;, self.name.split(&#39;\\&#39;)[-1])
 
 
 @entry(&#39;texture3d&#39;, b&#39;\xAA&#39;)
 class Texture3DEntry(XNBAssetEntryBase):
-    &#34;&#34;&#34;Represents a 3D Texture asset.
+  &#34;&#34;&#34;Represents a 3D Texture asset.
 
-    These entires represent encoded three-dimensional images. The data within
-    is essentially a stack of 2-d images -- you could imagine the data as voxels.
-    3-d modeling/rendering software generally assumes an image format consisting
-    of defined surfaces and shapes instead. It is therefore difficult to export
-    this type of asset to something useful, unlike it&#39;s 2D cousin.
+  These entires represent encoded three-dimensional images. The data within
+  is essentially a stack of 2-d images -- you could imagine the data as voxels.
+  3-d modeling/rendering software generally assumes an image format consisting
+  of defined surfaces and shapes instead. It is therefore difficult to export
+  this type of asset to something useful, unlike it&#39;s 2D cousin.
 
-    For now, exporting and importing to anything other than .xnb or .entry is
-    unsupported.
-    &#34;&#34;&#34;
-    pass
+  For now, exporting and importing to anything other than .xnb or .entry is
+  unsupported.
+  &#34;&#34;&#34;
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;textures&#39;, &#39;3d&#39;, self.name.split(&#39;\\&#39;)[-1])
 
 
 @entry(&#39;bink&#39;, b&#39;\xBB&#39;)
 class BinkEntry(EntryBase):
-    &#34;&#34;&#34;Represents a Bink asset.
+  &#34;&#34;&#34;Represents a Bink asset.
 
-    Bink is a video file format developed by RAD Game Tools, generally for
-    full-motion video sequences. These entries don&#39;t contain all of that
-    data, however, but instead merely contain references to those files.
+  Bink is a video file format developed by RAD Game Tools, generally for
+  full-motion video sequences. These entries don&#39;t contain all of that
+  data, however, but instead merely contain references to those files.
 
-    These entries are substantially more complicated in Hades&#39; format, but 
-    Hades doesn&#39;t seem to actually have these in its packages anymore. The
-    correct parsing code is provided regardless.
+  These entries are substantially more complicated in Hades&#39; format, but 
+  Hades doesn&#39;t seem to actually have these in its packages anymore. The
+  correct parsing code is provided regardless.
 
-    Because this entry doesn&#39;t really contain any data in and of itself,
-    it cannot be exported to or imported from any format (other than the
-    standard .entry)
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        firstByte = stream.read(1)
-        self.isAlpha = (firstByte == b&#39;\x01&#39;)
-        self.scaling = 1.0
-        if firstByte == b&#39;\xFF&#39;:
-            num = stream.read_int()
-            stream.read(1)
-            if num &gt; 0:
-                self.scaling = stream.read_single()
-        self.name = stream.read_string()
+  Because this entry doesn&#39;t really contain any data in and of itself,
+  it cannot be exported to or imported from any format (other than the
+  standard .entry)
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    firstByte = stream.read(1)
+    self.isAlpha = (firstByte == b&#39;\x01&#39;)
+    self.scaling = 1.0
+    if firstByte == b&#39;\xFF&#39;:
+      num = stream.read_int()
+      stream.read(1)
+      if num &gt; 0:
+        self.scaling = stream.read_single()
+    self.name = stream.read_string()
 
-    def write_to(self, stream):
-        raise NotImplementedError()
+  def write_to(self, stream):
+    pass
 
-    def display_name(self):
-        dispname = self.name.split(&#39;\\&#39;)[-1]
-        return f&#39;{self.entry_type()}: {dispname}&#39;
+  def display_name(self):
+    dispname = self.name.split(&#39;\\&#39;)[-1]
+    return f&#39;{self.entry_type()}: {dispname}&#39;
+  
+  def extract(self, target, **kwargs):
+    path = os.path.join(target, &#39;bink_refs&#39;)
+    os.makedirs(path, exist_ok=True)
+    super().extract(target, **kwargs)
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;bink_refs&#39;, self.name.split(&#39;\\&#39;)[-1])
 
 
 @entry(&#39;atlas&#39;, b&#39;\xDE&#39;)
 class AtlasEntry(EntryBase):
-    &#34;&#34;&#34;Represents an Atlas map.
+  &#34;&#34;&#34;Represents an Atlas map.
 
-    Often found in manifests, atlas entries are meant to be paired with 2D
-    textures to map out the different sprites contained within a sprite sheet.
-    The data in the entry essentially amounts to encoding of the positions and
-    sizes of various rectangles representing different sprites.
+  Often found in manifests, atlas entries are meant to be paired with 2D
+  textures to map out the different sprites contained within a sprite sheet.
+  The data in the entry essentially amounts to encoding of the positions and
+  sizes of various rectangles representing different sprites.
 
-    Atlas entries can be exported to and imported from .json files.
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        stream.read(4)  # This is the size, but we don&#39;t care about this and it gets ignored
-        self.version = 0
-        numSubAtlases = int.from_bytes(stream.read(4), byteorder=&#39;big&#39;)
-        if (numSubAtlases == 2142336875):   # No, I can&#39;t explain this           
-            self.version = stream.read_int()
-            numSubAtlases = stream.read_int()
-        self.subAtlases = []
-        for _ in range(0, numSubAtlases):
-            name = stream.read_string()
-            rect = {
-                &#39;x&#39;: stream.read_int(),
-                &#39;y&#39;: stream.read_int(),
-                &#39;width&#39;: stream.read_int(),
-                &#39;height&#39;: stream.read_int()
-            }
-            topLeft = {
-                &#39;x&#39;: stream.read_int(),
-                &#39;y&#39;: stream.read_int()
-            }
-            originalSize = {
-                &#39;x&#39;: stream.read_int(),
-                &#39;y&#39;: stream.read_int()
-            }
-            scaleRatio = {
-                &#39;x&#39;: stream.read_single(),
-                &#39;y&#39;: stream.read_single()
-            }
-            isMulti = False
-            isMip = False
-            isAlpha8 = False
-            if (self.version &gt; 0):
-                flags = ord(stream.read(1))
-                if (self.version &gt; 1):
-                    isMulti = (flags &amp; 1) != 0
-                    isMip = (flags &amp; 2) != 0
-                    if (self.version &gt; 3):
-                        isAlpha8 = (flags &amp; 4) != 0
-            hullPoints = []
-            if (self.version &gt; 2):
-                hullCount = stream.read_int()
-                for _ in range(0, hullCount):
-                    hullPoints.append({
-                        &#39;x&#39;: stream.read_int(),
-                        &#39;y&#39;: stream.read_int()
-                    })
-            self.subAtlases.append({
-                &#39;name&#39;: name,
-                &#39;rect&#39;: rect,
-                &#39;topLeft&#39;: topLeft,
-                &#39;originalSize&#39;: originalSize,
-                &#39;scaleRatio&#39;: scaleRatio,
-                &#39;isMulti&#39;: isMulti,
-                &#39;isMip&#39;: isMip,
-                &#39;isAlpha8&#39;: isAlpha8,
-                &#39;hull&#39;: hullPoints
-            })
-        
-        if (int.from_bytes(stream.read(1), byteorder=&#39;big&#39;) == 221) or isManifest:
-            self.isReference = True
-            self.referencedTextureName = stream.read_string()
-            self.name = self.referencedTextureName
-        else:
-            self.isReference = False
-            self.includedTexture = TextureEntry(stream, False, version)
-            self.name = self.includedTexture.name
+  Atlas entries can be exported to and imported from .json files.
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    stream.read(4)  # This is the size, but we don&#39;t care about this and it gets ignored
+    self.version = 0
+    numSubAtlases = int.from_bytes(stream.read(4), byteorder=&#39;big&#39;)
+    if (numSubAtlases == 2142336875):   # No, I can&#39;t explain this           
+      self.version = stream.read_int()
+      numSubAtlases = stream.read_int()
+    self.subAtlases = []
+    for _ in range(0, numSubAtlases):
+      name = stream.read_string()
+      rect = {
+        &#39;x&#39;: stream.read_int(),
+        &#39;y&#39;: stream.read_int(),
+        &#39;width&#39;: stream.read_int(),
+        &#39;height&#39;: stream.read_int()
+      }
+      topLeft = {
+        &#39;x&#39;: stream.read_int(),
+        &#39;y&#39;: stream.read_int()
+      }
+      originalSize = {
+        &#39;x&#39;: stream.read_int(),
+        &#39;y&#39;: stream.read_int()
+      }
+      scaleRatio = {
+        &#39;x&#39;: stream.read_single(),
+        &#39;y&#39;: stream.read_single()
+      }
+      isMulti = False
+      isMip = False
+      isAlpha8 = False
+      if (self.version &gt; 0):
+        flags = ord(stream.read(1))
+        if (self.version &gt; 1):
+          isMulti = (flags &amp; 1) != 0
+          isMip = (flags &amp; 2) != 0
+          if (self.version &gt; 3):
+              isAlpha8 = (flags &amp; 4) != 0
+      hullPoints = []
+      if (self.version &gt; 2):
+        hullCount = stream.read_int()
+        for _ in range(0, hullCount):
+          hullPoints.append({
+            &#39;x&#39;: stream.read_int(),
+            &#39;y&#39;: stream.read_int()
+          })
+      self.subAtlases.append({
+        &#39;name&#39;: name,
+        &#39;rect&#39;: rect,
+        &#39;topLeft&#39;: topLeft,
+        &#39;originalSize&#39;: originalSize,
+        &#39;scaleRatio&#39;: scaleRatio,
+        &#39;isMulti&#39;: isMulti,
+        &#39;isMip&#39;: isMip,
+        &#39;isAlpha8&#39;: isAlpha8,
+        &#39;hull&#39;: hullPoints
+      })
+    
+    if (int.from_bytes(stream.read(1), byteorder=&#39;big&#39;) == 221) or isManifest:
+      self.isReference = True
+      self.referencedTextureName = stream.read_string()
+      self.name = self.referencedTextureName
+    else:
+      self.isReference = False
+      self.includedTexture = TextureEntry(stream, False, version)
+      self.name = self.includedTexture.name
+      self.referencedTextureName = &#39;&#39;
 
-    def write_to(self, stream):
-        contentsBytes = _BytesIO()
-        contentsBytes.write_int(2142336875)
-        contentsBytes.write_int(self.version)
-        contentsBytes.write_int(len(self.subAtlases))
-        for subAtlas in self.subAtlases:
-            contentsBytes.write_string(subAtlas[&#39;name&#39;])
-            contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;x&#39;])
-            contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;y&#39;])
-            contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;width&#39;])
-            contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;height&#39;])
-            contentsBytes.write_int(subAtlas[&#39;topLeft&#39;][&#39;x&#39;])
-            contentsBytes.write_int(subAtlas[&#39;topLeft&#39;][&#39;y&#39;])
-            contentsBytes.write_int(subAtlas[&#39;originalSize&#39;][&#39;x&#39;])
-            contentsBytes.write_int(subAtlas[&#39;originalSize&#39;][&#39;y&#39;])
-            contentsBytes.write_single(subAtlas[&#39;scaleRatio&#39;][&#39;x&#39;])
-            contentsBytes.write_single(subAtlas[&#39;scaleRatio&#39;][&#39;y&#39;])
+  def write_to(self, stream):
+    contentsBytes = _BytesIO()
+    contentsBytes.write_int(2142336875)
+    contentsBytes.write_int(self.version)
+    contentsBytes.write_int(len(self.subAtlases))
+    for subAtlas in self.subAtlases:
+      contentsBytes.write_string(subAtlas[&#39;name&#39;])
+      contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;x&#39;])
+      contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;y&#39;])
+      contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;width&#39;])
+      contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;height&#39;])
+      contentsBytes.write_int(subAtlas[&#39;topLeft&#39;][&#39;x&#39;])
+      contentsBytes.write_int(subAtlas[&#39;topLeft&#39;][&#39;y&#39;])
+      contentsBytes.write_int(subAtlas[&#39;originalSize&#39;][&#39;x&#39;])
+      contentsBytes.write_int(subAtlas[&#39;originalSize&#39;][&#39;y&#39;])
+      contentsBytes.write_single(subAtlas[&#39;scaleRatio&#39;][&#39;x&#39;])
+      contentsBytes.write_single(subAtlas[&#39;scaleRatio&#39;][&#39;y&#39;])
 
-            if (self.version &gt; 0):
-                flags = 1 if subAtlas[&#39;isMulti&#39;] else 0
-                flags = flags + (2 if subAtlas[&#39;isMip&#39;] else 0)
-                flags = flags + (4 if subAtlas[&#39;isAlpha8&#39;] else 0)
-                contentsBytes.write(bytes([flags]))
+      if (self.version &gt; 0):
+        flags = 1 if subAtlas[&#39;isMulti&#39;] else 0
+        flags = flags + (2 if subAtlas[&#39;isMip&#39;] else 0)
+        flags = flags + (4 if subAtlas[&#39;isAlpha8&#39;] else 0)
+        contentsBytes.write(bytes([flags]))
 
-            if (self.version &gt; 2):
-                contentsBytes.write_int(len(subAtlas[&#39;hull&#39;]))
-                for point in subAtlas[&#39;hull&#39;]:
-                    contentsBytes.write_int(point[&#39;x&#39;])
-                    contentsBytes.write_int(point[&#39;y&#39;])
-            
-        contentsBytes.write(bytes([221 if self.isReference else 0]))
+      if (self.version &gt; 2):
+        contentsBytes.write_int(len(subAtlas[&#39;hull&#39;]))
+        for point in subAtlas[&#39;hull&#39;]:
+          contentsBytes.write_int(point[&#39;x&#39;])
+          contentsBytes.write_int(point[&#39;y&#39;])
+      
+    contentsBytes.write(bytes([221 if self.isReference else 0]))
 
-        if self.isReference:
-            contentsBytes.write_string(self.referencedTextureName)
-        else:
-            self.includedTexture.write_to(contentsBytes)
+    if self.isReference:
+      contentsBytes.write_string(self.referencedTextureName)
+    else:
+      self.includedTexture.write_to(contentsBytes)
 
-        buf = contentsBytes.getbuffer()
-        stream.write_int(len(buf) - 35)     # Apparently the size is wrong. No one cares.
-        stream.write(bytes(buf))
+    buf = contentsBytes.getbuffer()
+    stream.write_int(len(buf) - 35)     # Apparently the size is wrong. No one cares.
+    stream.write(bytes(buf))
 
-    def _export(self, path):
-        # If the user didn&#39;t ask for a supported format, then don&#39;t export
-        if os.path.splitext(path)[1] not in [&#39;.json&#39;]:
-            return super()._export(path)
+  def _export(self, path):
+    # If the user didn&#39;t ask for a supported format, then don&#39;t export
+    if os.path.splitext(path)[1] not in [&#39;.json&#39;]:
+      return super()._export(path)
 
-        data = {
-            &#39;version&#39;: self.version, 
-            &#39;subAtlases&#39;: self.subAtlases,
-            &#39;isReference&#39;: self.isReference,
-            &#39;referencedTextureName&#39;: self.referencedTextureName
-        }
+    data = {
+      &#39;name&#39;: self.name,
+      &#39;version&#39;: self.version, 
+      &#39;subAtlases&#39;: self.subAtlases,
+      &#39;isReference&#39;: self.isReference,
+      &#39;referencedTextureName&#39;: self.referencedTextureName
+    }
 
-        with open(path, &#34;w&#34;) as json_file:
-            json_file.write(json.dumps(data))
+    with open(path, &#34;w&#34;) as json_file:
+      json_file.write(json.dumps(data))
 
-        return True
+    return True
 
-    def _import(self, path):
-        # If the user didn&#39;t ask for a supported image format, then don&#39;t export
-        if os.path.splitext(path)[1] not in [&#39;.json&#39;]:
-            return super()._export(path)
+  def extract(self, target, **kwargs):
+    path = os.path.join(target, &#39;manifest&#39;)
+    os.makedirs(path, exist_ok=True)
+    self._export(self._extraction_path(target) + &#39;.atlas.json&#39;)
+    if not self.isReference:
+      self.includedTexture.extract(target, **kwargs)
 
-        with open(path, &#34;r&#34;) as json_file:
-            data = json.load(json_file)
-            self.version = data[&#39;version&#39;]
-            self.isReference = data[&#39;isReference&#39;]
-            self.referencedTextureName = data[&#39;referencedTextureName&#39;]
-            self.subAtlases = data[&#39;subAtlases&#39;]
-        return True
+  def _import(self, path):
+    # If the user didn&#39;t ask for a supported format, then don&#39;t export in this way
+    if os.path.splitext(path)[1] not in [&#39;.json&#39;]:
+      return super()._import(path)
+
+    with open(path, &#34;r&#34;) as json_file:
+      data = json.load(json_file)
+      self.name = data[&#39;name&#39;]
+      self.version = data[&#39;version&#39;]
+      self.isReference = data[&#39;isReference&#39;]
+      self.referencedTextureName = data[&#39;referencedTextureName&#39;]
+      self.subAtlases = data[&#39;subAtlases&#39;]
+    return True
+  
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;manifest&#39;, self.name.split(&#39;\\&#39;)[-1])
 
 
 @entry(&#39;binkAtlas&#39;, b&#39;\xEE&#39;)
 class BinkAtlasEntry(EntryBase):
-    &#34;&#34;&#34;Represents a Bink atlas.
+  &#34;&#34;&#34;Represents a Bink atlas.
 
-    Found in manifests of packages with Bink entries, Bink atlases serve
-    a somewhat similar purpose as Atlas entries do for Textures. That
-    said, bink files don&#39;t contain a bunch of imagery packed together
-    like a spritesheet would, so the data in a Bink atlas is much simpler --
-    it defines a bounding rectangle for the content, and allows for storage
-    of a scaling factor to be used, presumably, by the game engine to enlarge
-    or shrink the display of the asset.
+  Found in manifests of packages with Bink entries, Bink atlases serve
+  a somewhat similar purpose as Atlas entries do for Textures. That
+  said, bink files don&#39;t contain a bunch of imagery packed together
+  like a spritesheet would, so the data in a Bink atlas is much simpler --
+  it defines a bounding rectangle for the content, and allows for storage
+  of a scaling factor to be used, presumably, by the game engine to enlarge
+  or shrink the display of the asset.
 
-    Currently does not support import or export (other than .entry)
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        self.size = stream.read_int()
-        self.version = stream.read_int()
-        if (self.version &lt; 1):
-            raise Exception(&#39;Invalid Bink Atlas version&#39;)
-        self.name = stream.read_string()
-        self.width = stream.read_int()
-        self.height = stream.read_int()
-        if (self.version &gt; 1):
-            self.originalSize = {
-                &#39;x&#39;: stream.read_int(),
-                &#39;y&#39;: stream.read_int()
-            }
-            if (self.version &gt; 2):
-                self.scaling = stream.read_single()
+  Currently does not support import or export (other than .entry)
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    self.size = stream.read_int()
+    self.version = stream.read_int()
+    if (self.version &lt; 1):
+      raise Exception(&#39;Invalid Bink Atlas version&#39;)
+    self.name = stream.read_string()
+    self.width = stream.read_int()
+    self.height = stream.read_int()
+    if (self.version &gt; 1):
+      self.originalSize = {
+        &#39;x&#39;: stream.read_int(),
+        &#39;y&#39;: stream.read_int()
+      }
+      if (self.version &gt; 2):
+        self.scaling = stream.read_single()
 
-    def write_to(self, stream):
-        stream.write_int(self.size)
-        stream.write_int(self.version)
-        stream.write_string(self.name)
-        stream.write_int(self.width)
-        stream.write_int(self.height)
-        if (self.version &gt; 1):
-            stream.write_int(self.originalSize[&#39;x&#39;])
-            stream.write_int(self.originalSize[&#39;y&#39;])
-            if (self.version &gt; 2):
-                stream.write_single(self.scaling)
+  def write_to(self, stream):
+    stream.write_int(self.size)
+    stream.write_int(self.version)
+    stream.write_string(self.name)
+    stream.write_int(self.width)
+    stream.write_int(self.height)
+    if (self.version &gt; 1):
+      stream.write_int(self.originalSize[&#39;x&#39;])
+      stream.write_int(self.originalSize[&#39;y&#39;])
+      if (self.version &gt; 2):
+        stream.write_single(self.scaling)
+
+  def extract(self, target, **kwargs):
+    path = os.path.join(target, &#39;manifest&#39;)
+    os.makedirs(path, exist_ok=True)
+    super().extract(target, **kwargs)
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;manifest&#39;, self.name.split(&#39;\\&#39;)[-1])
 
 
 @entry(&#39;include&#39;, b&#39;\xCC&#39;)
 class IncludePackageEntry(EntryBase):
-    &#34;&#34;&#34;Represents a package include reference.
+  &#34;&#34;&#34;Represents a package include reference.
 
-    These entries are simply references to other packages. When
-    read by the game engine, the named packages are also loaded.
+  These entries are simply references to other packages. When
+  read by the game engine, the named packages are also loaded.
 
-    Currently does not support import or export (other than .entry).
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        self.name = stream.read_string()
-    
-    def write_to(self, stream):
-        stream.write_string(self.name)
+  Currently does not support import or export (other than .entry).
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    self.name = stream.read_string()
+  
+  def write_to(self, stream):
+    stream.write_string(self.name)
+
+  def extract(self, target, **kwargs):
+    if &#39;includes&#39; in kwargs:
+      kwargs[&#39;includes&#39;].append(self.name)
+
 
 @entry(&#39;spine&#39;, b&#39;\xF0&#39;)
 class SpineEntry(EntryBase):
-    &#34;&#34;&#34;Represents a spine asset.
+  &#34;&#34;&#34;Represents a spine asset.
 
-    Spine is a 2D skeletal animation framework for video games.
-    The data in a spine entry consist of an identifier, the spine
-    data itself, and a texture atlas (using the libgdx format, not
-    the format used by other atlases).
+  Spine is a 2D skeletal animation framework for video games.
+  The data in a spine entry consist of an identifier, the spine
+  data itself, and a texture atlas (using the libgdx format, not
+  the format used by other atlases).
 
-    Currently does not support import or export (other than .entry).
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        self.version = ord(stream.read(1))
-        self.name = stream.read_string()
-        self.spineAtlas = stream.read_big_string()
-        self.spineData = stream.read_big_string()
+  Currently does not support import or export (other than .entry).
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    self.version = ord(stream.read(1))
+    self.name = stream.read_string()
+    self.spineAtlas = stream.read_big_string()
+    self.spineData = stream.read_big_string()
 
-    def write_to(self, stream):
-        stream.write(bytes([self.version]))
-        stream.write_string(self.name)
-        stream.write_big_string(self.spineAtlas)
-        stream.write_big_string(self.spineData)</code></pre>
+  def write_to(self, stream):
+    stream.write(bytes([self.version]))
+    stream.write_string(self.name)
+    stream.write_big_string(self.spineAtlas)
+    stream.write_big_string(self.spineData)
+
+  def extract(self, target, **kwargs):
+    path = os.path.join(target, &#39;spines&#39;)
+    os.makedirs(path, exist_ok=True)
+    super().extract(target, **kwargs)
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;spines&#39;, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
 </section>
 <section>
@@ -599,18 +741,18 @@ correct subclass to read the entry's data from the stream.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def entry(typeName, typeCode):
-    &#34;&#34;&#34;Decorates a subclass of EntryBase to register its name and byte code.
-    
-    This makes the class discoverable by the entry reading code to find the 
-    correct subclass to read the entry&#39;s data from the stream.
-    &#34;&#34;&#34;
-    def decorate_entry(cls):
-        cls._typeName = typeName
-        cls._typeCode = typeCode
-        if typeCode:
-            _entry_types[typeCode] = cls
-        return cls
-    return decorate_entry</code></pre>
+  &#34;&#34;&#34;Decorates a subclass of EntryBase to register its name and byte code.
+  
+  This makes the class discoverable by the entry reading code to find the 
+  correct subclass to read the entry&#39;s data from the stream.
+  &#34;&#34;&#34;
+  def decorate_entry(cls):
+    cls.typeName = typeName
+    cls.typeCode = typeCode
+    if typeCode:
+      _entry_types[typeCode] = cls
+    return cls
+  return decorate_entry</code></pre>
 </details>
 </dd>
 <dt id="deppth.entries.get_entry"><code class="name flex">
@@ -624,6 +766,27 @@ correct subclass to read the entry's data from the stream.</p></div>
 </summary>
 <pre><code class="python">def get_entry(b, stream, is_manifest=False):
   return _entry_types[b](stream, isManifest=is_manifest)</code></pre>
+</details>
+</dd>
+<dt id="deppth.entries.import_entry"><code class="name flex">
+<span>def <span class="ident">import_entry</span></span>(<span>filename)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def import_entry(filename):
+  if filename.endswith(&#34;.atlas.json&#34;):
+    entry = AtlasEntry()
+    entry.import_file(filename)
+    return entry
+  elif filename.endswith(&#34;.png&#34;):
+    entry = TextureEntry()
+    entry.import_file(filename)
+    return entry
+  return None</code></pre>
 </details>
 </dd>
 </dl>
@@ -657,158 +820,182 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class AtlasEntry(EntryBase):
-    &#34;&#34;&#34;Represents an Atlas map.
+  &#34;&#34;&#34;Represents an Atlas map.
 
-    Often found in manifests, atlas entries are meant to be paired with 2D
-    textures to map out the different sprites contained within a sprite sheet.
-    The data in the entry essentially amounts to encoding of the positions and
-    sizes of various rectangles representing different sprites.
+  Often found in manifests, atlas entries are meant to be paired with 2D
+  textures to map out the different sprites contained within a sprite sheet.
+  The data in the entry essentially amounts to encoding of the positions and
+  sizes of various rectangles representing different sprites.
 
-    Atlas entries can be exported to and imported from .json files.
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        stream.read(4)  # This is the size, but we don&#39;t care about this and it gets ignored
-        self.version = 0
-        numSubAtlases = int.from_bytes(stream.read(4), byteorder=&#39;big&#39;)
-        if (numSubAtlases == 2142336875):   # No, I can&#39;t explain this           
-            self.version = stream.read_int()
-            numSubAtlases = stream.read_int()
-        self.subAtlases = []
-        for _ in range(0, numSubAtlases):
-            name = stream.read_string()
-            rect = {
-                &#39;x&#39;: stream.read_int(),
-                &#39;y&#39;: stream.read_int(),
-                &#39;width&#39;: stream.read_int(),
-                &#39;height&#39;: stream.read_int()
-            }
-            topLeft = {
-                &#39;x&#39;: stream.read_int(),
-                &#39;y&#39;: stream.read_int()
-            }
-            originalSize = {
-                &#39;x&#39;: stream.read_int(),
-                &#39;y&#39;: stream.read_int()
-            }
-            scaleRatio = {
-                &#39;x&#39;: stream.read_single(),
-                &#39;y&#39;: stream.read_single()
-            }
-            isMulti = False
-            isMip = False
-            isAlpha8 = False
-            if (self.version &gt; 0):
-                flags = ord(stream.read(1))
-                if (self.version &gt; 1):
-                    isMulti = (flags &amp; 1) != 0
-                    isMip = (flags &amp; 2) != 0
-                    if (self.version &gt; 3):
-                        isAlpha8 = (flags &amp; 4) != 0
-            hullPoints = []
-            if (self.version &gt; 2):
-                hullCount = stream.read_int()
-                for _ in range(0, hullCount):
-                    hullPoints.append({
-                        &#39;x&#39;: stream.read_int(),
-                        &#39;y&#39;: stream.read_int()
-                    })
-            self.subAtlases.append({
-                &#39;name&#39;: name,
-                &#39;rect&#39;: rect,
-                &#39;topLeft&#39;: topLeft,
-                &#39;originalSize&#39;: originalSize,
-                &#39;scaleRatio&#39;: scaleRatio,
-                &#39;isMulti&#39;: isMulti,
-                &#39;isMip&#39;: isMip,
-                &#39;isAlpha8&#39;: isAlpha8,
-                &#39;hull&#39;: hullPoints
-            })
-        
-        if (int.from_bytes(stream.read(1), byteorder=&#39;big&#39;) == 221) or isManifest:
-            self.isReference = True
-            self.referencedTextureName = stream.read_string()
-            self.name = self.referencedTextureName
-        else:
-            self.isReference = False
-            self.includedTexture = TextureEntry(stream, False, version)
-            self.name = self.includedTexture.name
+  Atlas entries can be exported to and imported from .json files.
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    stream.read(4)  # This is the size, but we don&#39;t care about this and it gets ignored
+    self.version = 0
+    numSubAtlases = int.from_bytes(stream.read(4), byteorder=&#39;big&#39;)
+    if (numSubAtlases == 2142336875):   # No, I can&#39;t explain this           
+      self.version = stream.read_int()
+      numSubAtlases = stream.read_int()
+    self.subAtlases = []
+    for _ in range(0, numSubAtlases):
+      name = stream.read_string()
+      rect = {
+        &#39;x&#39;: stream.read_int(),
+        &#39;y&#39;: stream.read_int(),
+        &#39;width&#39;: stream.read_int(),
+        &#39;height&#39;: stream.read_int()
+      }
+      topLeft = {
+        &#39;x&#39;: stream.read_int(),
+        &#39;y&#39;: stream.read_int()
+      }
+      originalSize = {
+        &#39;x&#39;: stream.read_int(),
+        &#39;y&#39;: stream.read_int()
+      }
+      scaleRatio = {
+        &#39;x&#39;: stream.read_single(),
+        &#39;y&#39;: stream.read_single()
+      }
+      isMulti = False
+      isMip = False
+      isAlpha8 = False
+      if (self.version &gt; 0):
+        flags = ord(stream.read(1))
+        if (self.version &gt; 1):
+          isMulti = (flags &amp; 1) != 0
+          isMip = (flags &amp; 2) != 0
+          if (self.version &gt; 3):
+              isAlpha8 = (flags &amp; 4) != 0
+      hullPoints = []
+      if (self.version &gt; 2):
+        hullCount = stream.read_int()
+        for _ in range(0, hullCount):
+          hullPoints.append({
+            &#39;x&#39;: stream.read_int(),
+            &#39;y&#39;: stream.read_int()
+          })
+      self.subAtlases.append({
+        &#39;name&#39;: name,
+        &#39;rect&#39;: rect,
+        &#39;topLeft&#39;: topLeft,
+        &#39;originalSize&#39;: originalSize,
+        &#39;scaleRatio&#39;: scaleRatio,
+        &#39;isMulti&#39;: isMulti,
+        &#39;isMip&#39;: isMip,
+        &#39;isAlpha8&#39;: isAlpha8,
+        &#39;hull&#39;: hullPoints
+      })
+    
+    if (int.from_bytes(stream.read(1), byteorder=&#39;big&#39;) == 221) or isManifest:
+      self.isReference = True
+      self.referencedTextureName = stream.read_string()
+      self.name = self.referencedTextureName
+    else:
+      self.isReference = False
+      self.includedTexture = TextureEntry(stream, False, version)
+      self.name = self.includedTexture.name
+      self.referencedTextureName = &#39;&#39;
 
-    def write_to(self, stream):
-        contentsBytes = _BytesIO()
-        contentsBytes.write_int(2142336875)
-        contentsBytes.write_int(self.version)
-        contentsBytes.write_int(len(self.subAtlases))
-        for subAtlas in self.subAtlases:
-            contentsBytes.write_string(subAtlas[&#39;name&#39;])
-            contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;x&#39;])
-            contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;y&#39;])
-            contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;width&#39;])
-            contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;height&#39;])
-            contentsBytes.write_int(subAtlas[&#39;topLeft&#39;][&#39;x&#39;])
-            contentsBytes.write_int(subAtlas[&#39;topLeft&#39;][&#39;y&#39;])
-            contentsBytes.write_int(subAtlas[&#39;originalSize&#39;][&#39;x&#39;])
-            contentsBytes.write_int(subAtlas[&#39;originalSize&#39;][&#39;y&#39;])
-            contentsBytes.write_single(subAtlas[&#39;scaleRatio&#39;][&#39;x&#39;])
-            contentsBytes.write_single(subAtlas[&#39;scaleRatio&#39;][&#39;y&#39;])
+  def write_to(self, stream):
+    contentsBytes = _BytesIO()
+    contentsBytes.write_int(2142336875)
+    contentsBytes.write_int(self.version)
+    contentsBytes.write_int(len(self.subAtlases))
+    for subAtlas in self.subAtlases:
+      contentsBytes.write_string(subAtlas[&#39;name&#39;])
+      contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;x&#39;])
+      contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;y&#39;])
+      contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;width&#39;])
+      contentsBytes.write_int(subAtlas[&#39;rect&#39;][&#39;height&#39;])
+      contentsBytes.write_int(subAtlas[&#39;topLeft&#39;][&#39;x&#39;])
+      contentsBytes.write_int(subAtlas[&#39;topLeft&#39;][&#39;y&#39;])
+      contentsBytes.write_int(subAtlas[&#39;originalSize&#39;][&#39;x&#39;])
+      contentsBytes.write_int(subAtlas[&#39;originalSize&#39;][&#39;y&#39;])
+      contentsBytes.write_single(subAtlas[&#39;scaleRatio&#39;][&#39;x&#39;])
+      contentsBytes.write_single(subAtlas[&#39;scaleRatio&#39;][&#39;y&#39;])
 
-            if (self.version &gt; 0):
-                flags = 1 if subAtlas[&#39;isMulti&#39;] else 0
-                flags = flags + (2 if subAtlas[&#39;isMip&#39;] else 0)
-                flags = flags + (4 if subAtlas[&#39;isAlpha8&#39;] else 0)
-                contentsBytes.write(bytes([flags]))
+      if (self.version &gt; 0):
+        flags = 1 if subAtlas[&#39;isMulti&#39;] else 0
+        flags = flags + (2 if subAtlas[&#39;isMip&#39;] else 0)
+        flags = flags + (4 if subAtlas[&#39;isAlpha8&#39;] else 0)
+        contentsBytes.write(bytes([flags]))
 
-            if (self.version &gt; 2):
-                contentsBytes.write_int(len(subAtlas[&#39;hull&#39;]))
-                for point in subAtlas[&#39;hull&#39;]:
-                    contentsBytes.write_int(point[&#39;x&#39;])
-                    contentsBytes.write_int(point[&#39;y&#39;])
-            
-        contentsBytes.write(bytes([221 if self.isReference else 0]))
+      if (self.version &gt; 2):
+        contentsBytes.write_int(len(subAtlas[&#39;hull&#39;]))
+        for point in subAtlas[&#39;hull&#39;]:
+          contentsBytes.write_int(point[&#39;x&#39;])
+          contentsBytes.write_int(point[&#39;y&#39;])
+      
+    contentsBytes.write(bytes([221 if self.isReference else 0]))
 
-        if self.isReference:
-            contentsBytes.write_string(self.referencedTextureName)
-        else:
-            self.includedTexture.write_to(contentsBytes)
+    if self.isReference:
+      contentsBytes.write_string(self.referencedTextureName)
+    else:
+      self.includedTexture.write_to(contentsBytes)
 
-        buf = contentsBytes.getbuffer()
-        stream.write_int(len(buf) - 35)     # Apparently the size is wrong. No one cares.
-        stream.write(bytes(buf))
+    buf = contentsBytes.getbuffer()
+    stream.write_int(len(buf) - 35)     # Apparently the size is wrong. No one cares.
+    stream.write(bytes(buf))
 
-    def _export(self, path):
-        # If the user didn&#39;t ask for a supported format, then don&#39;t export
-        if os.path.splitext(path)[1] not in [&#39;.json&#39;]:
-            return super()._export(path)
+  def _export(self, path):
+    # If the user didn&#39;t ask for a supported format, then don&#39;t export
+    if os.path.splitext(path)[1] not in [&#39;.json&#39;]:
+      return super()._export(path)
 
-        data = {
-            &#39;version&#39;: self.version, 
-            &#39;subAtlases&#39;: self.subAtlases,
-            &#39;isReference&#39;: self.isReference,
-            &#39;referencedTextureName&#39;: self.referencedTextureName
-        }
+    data = {
+      &#39;name&#39;: self.name,
+      &#39;version&#39;: self.version, 
+      &#39;subAtlases&#39;: self.subAtlases,
+      &#39;isReference&#39;: self.isReference,
+      &#39;referencedTextureName&#39;: self.referencedTextureName
+    }
 
-        with open(path, &#34;w&#34;) as json_file:
-            json_file.write(json.dumps(data))
+    with open(path, &#34;w&#34;) as json_file:
+      json_file.write(json.dumps(data))
 
-        return True
+    return True
 
-    def _import(self, path):
-        # If the user didn&#39;t ask for a supported image format, then don&#39;t export
-        if os.path.splitext(path)[1] not in [&#39;.json&#39;]:
-            return super()._export(path)
+  def extract(self, target, **kwargs):
+    path = os.path.join(target, &#39;manifest&#39;)
+    os.makedirs(path, exist_ok=True)
+    self._export(self._extraction_path(target) + &#39;.atlas.json&#39;)
+    if not self.isReference:
+      self.includedTexture.extract(target, **kwargs)
 
-        with open(path, &#34;r&#34;) as json_file:
-            data = json.load(json_file)
-            self.version = data[&#39;version&#39;]
-            self.isReference = data[&#39;isReference&#39;]
-            self.referencedTextureName = data[&#39;referencedTextureName&#39;]
-            self.subAtlases = data[&#39;subAtlases&#39;]
-        return True</code></pre>
+  def _import(self, path):
+    # If the user didn&#39;t ask for a supported format, then don&#39;t export in this way
+    if os.path.splitext(path)[1] not in [&#39;.json&#39;]:
+      return super()._import(path)
+
+    with open(path, &#34;r&#34;) as json_file:
+      data = json.load(json_file)
+      self.name = data[&#39;name&#39;]
+      self.version = data[&#39;version&#39;]
+      self.isReference = data[&#39;isReference&#39;]
+      self.referencedTextureName = data[&#39;referencedTextureName&#39;]
+      self.subAtlases = data[&#39;subAtlases&#39;]
+    return True
+  
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;manifest&#39;, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="deppth.entries.AtlasEntry.typeCode"><code class="name">var <span class="ident">typeCode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="deppth.entries.AtlasEntry.typeName"><code class="name">var <span class="ident">typeName</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></b></code>:
@@ -816,6 +1003,7 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.EntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.EntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
@@ -852,51 +1040,70 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class BinkAtlasEntry(EntryBase):
-    &#34;&#34;&#34;Represents a Bink atlas.
+  &#34;&#34;&#34;Represents a Bink atlas.
 
-    Found in manifests of packages with Bink entries, Bink atlases serve
-    a somewhat similar purpose as Atlas entries do for Textures. That
-    said, bink files don&#39;t contain a bunch of imagery packed together
-    like a spritesheet would, so the data in a Bink atlas is much simpler --
-    it defines a bounding rectangle for the content, and allows for storage
-    of a scaling factor to be used, presumably, by the game engine to enlarge
-    or shrink the display of the asset.
+  Found in manifests of packages with Bink entries, Bink atlases serve
+  a somewhat similar purpose as Atlas entries do for Textures. That
+  said, bink files don&#39;t contain a bunch of imagery packed together
+  like a spritesheet would, so the data in a Bink atlas is much simpler --
+  it defines a bounding rectangle for the content, and allows for storage
+  of a scaling factor to be used, presumably, by the game engine to enlarge
+  or shrink the display of the asset.
 
-    Currently does not support import or export (other than .entry)
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        self.size = stream.read_int()
-        self.version = stream.read_int()
-        if (self.version &lt; 1):
-            raise Exception(&#39;Invalid Bink Atlas version&#39;)
-        self.name = stream.read_string()
-        self.width = stream.read_int()
-        self.height = stream.read_int()
-        if (self.version &gt; 1):
-            self.originalSize = {
-                &#39;x&#39;: stream.read_int(),
-                &#39;y&#39;: stream.read_int()
-            }
-            if (self.version &gt; 2):
-                self.scaling = stream.read_single()
+  Currently does not support import or export (other than .entry)
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    self.size = stream.read_int()
+    self.version = stream.read_int()
+    if (self.version &lt; 1):
+      raise Exception(&#39;Invalid Bink Atlas version&#39;)
+    self.name = stream.read_string()
+    self.width = stream.read_int()
+    self.height = stream.read_int()
+    if (self.version &gt; 1):
+      self.originalSize = {
+        &#39;x&#39;: stream.read_int(),
+        &#39;y&#39;: stream.read_int()
+      }
+      if (self.version &gt; 2):
+        self.scaling = stream.read_single()
 
-    def write_to(self, stream):
-        stream.write_int(self.size)
-        stream.write_int(self.version)
-        stream.write_string(self.name)
-        stream.write_int(self.width)
-        stream.write_int(self.height)
-        if (self.version &gt; 1):
-            stream.write_int(self.originalSize[&#39;x&#39;])
-            stream.write_int(self.originalSize[&#39;y&#39;])
-            if (self.version &gt; 2):
-                stream.write_single(self.scaling)</code></pre>
+  def write_to(self, stream):
+    stream.write_int(self.size)
+    stream.write_int(self.version)
+    stream.write_string(self.name)
+    stream.write_int(self.width)
+    stream.write_int(self.height)
+    if (self.version &gt; 1):
+      stream.write_int(self.originalSize[&#39;x&#39;])
+      stream.write_int(self.originalSize[&#39;y&#39;])
+      if (self.version &gt; 2):
+        stream.write_single(self.scaling)
+
+  def extract(self, target, **kwargs):
+    path = os.path.join(target, &#39;manifest&#39;)
+    os.makedirs(path, exist_ok=True)
+    super().extract(target, **kwargs)
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;manifest&#39;, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="deppth.entries.BinkAtlasEntry.typeCode"><code class="name">var <span class="ident">typeCode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="deppth.entries.BinkAtlasEntry.typeName"><code class="name">var <span class="ident">typeName</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></b></code>:
@@ -904,6 +1111,7 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.EntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.EntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
@@ -941,43 +1149,62 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class BinkEntry(EntryBase):
-    &#34;&#34;&#34;Represents a Bink asset.
+  &#34;&#34;&#34;Represents a Bink asset.
 
-    Bink is a video file format developed by RAD Game Tools, generally for
-    full-motion video sequences. These entries don&#39;t contain all of that
-    data, however, but instead merely contain references to those files.
+  Bink is a video file format developed by RAD Game Tools, generally for
+  full-motion video sequences. These entries don&#39;t contain all of that
+  data, however, but instead merely contain references to those files.
 
-    These entries are substantially more complicated in Hades&#39; format, but 
-    Hades doesn&#39;t seem to actually have these in its packages anymore. The
-    correct parsing code is provided regardless.
+  These entries are substantially more complicated in Hades&#39; format, but 
+  Hades doesn&#39;t seem to actually have these in its packages anymore. The
+  correct parsing code is provided regardless.
 
-    Because this entry doesn&#39;t really contain any data in and of itself,
-    it cannot be exported to or imported from any format (other than the
-    standard .entry)
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        firstByte = stream.read(1)
-        self.isAlpha = (firstByte == b&#39;\x01&#39;)
-        self.scaling = 1.0
-        if firstByte == b&#39;\xFF&#39;:
-            num = stream.read_int()
-            stream.read(1)
-            if num &gt; 0:
-                self.scaling = stream.read_single()
-        self.name = stream.read_string()
+  Because this entry doesn&#39;t really contain any data in and of itself,
+  it cannot be exported to or imported from any format (other than the
+  standard .entry)
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    firstByte = stream.read(1)
+    self.isAlpha = (firstByte == b&#39;\x01&#39;)
+    self.scaling = 1.0
+    if firstByte == b&#39;\xFF&#39;:
+      num = stream.read_int()
+      stream.read(1)
+      if num &gt; 0:
+        self.scaling = stream.read_single()
+    self.name = stream.read_string()
 
-    def write_to(self, stream):
-        raise NotImplementedError()
+  def write_to(self, stream):
+    pass
 
-    def display_name(self):
-        dispname = self.name.split(&#39;\\&#39;)[-1]
-        return f&#39;{self.entry_type()}: {dispname}&#39;</code></pre>
+  def display_name(self):
+    dispname = self.name.split(&#39;\\&#39;)[-1]
+    return f&#39;{self.entry_type()}: {dispname}&#39;
+  
+  def extract(self, target, **kwargs):
+    path = os.path.join(target, &#39;bink_refs&#39;)
+    os.makedirs(path, exist_ok=True)
+    super().extract(target, **kwargs)
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;bink_refs&#39;, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="deppth.entries.BinkEntry.typeCode"><code class="name">var <span class="ident">typeCode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="deppth.entries.BinkEntry.typeName"><code class="name">var <span class="ident">typeName</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></b></code>:
@@ -985,6 +1212,7 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.EntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.EntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
@@ -1071,6 +1299,9 @@ Packages for Transistor and Pyre are version 5.</p></div>
     dispname = self.name
     return f&#39;{self.entry_type()}: {dispname}&#39;
 
+  def short_name(self):
+    return self.name.split(&#39;\\&#39;)[-1]
+
   def entry_type(self):
     &#34;&#34;&#34;Returns the type of entry this is as a human-readable string.&#34;&#34;&#34;
     return self._typeName
@@ -1087,6 +1318,19 @@ Packages for Transistor and Pyre are version 5.</p></div>
     &#34;&#34;&#34;
     if not self._export(path):
       raise NotImplementedError(f&#39;Unable to export file to this format: {path}&#39;)
+
+  def extract(self, target, **kwargs):
+    &#34;&#34;&#34;Extracts this entry from the package to the target directory.
+
+    This exports the asset as export_file might, but doesn&#39;t give the user choice
+    as to how that export is performed. This function is expected to create
+    one or more files in the directory given by target based on the name and
+    type of the entry.
+
+    If not overridden, this function will export a binary representation of the
+    entry to a .entry file.
+    &#34;&#34;&#34;
+    self._export(self._extraction_path(target) + &#39;.entry&#39;)
 
   def import_file(self, path):
     &#34;&#34;&#34;Imports this entry from a file.
@@ -1119,7 +1363,10 @@ Packages for Transistor and Pyre are version 5.</p></div>
     with _FileIO(path, &#39;rb&#39;) as f:
       f.read(1)                   # Skip the entry code byte (we already knew it)
       self.read_from(f)           # Read the remaining bytes
-    return True</code></pre>
+    return True
+
+  def _extraction_path(self, target):
+    return os.path.join(target, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1193,6 +1440,35 @@ formats.</p></div>
     raise NotImplementedError(f&#39;Unable to export file to this format: {path}&#39;)</code></pre>
 </details>
 </dd>
+<dt id="deppth.entries.EntryBase.extract"><code class="name flex">
+<span>def <span class="ident">extract</span></span>(<span>self, target, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Extracts this entry from the package to the target directory.</p>
+<p>This exports the asset as export_file might, but doesn't give the user choice
+as to how that export is performed. This function is expected to create
+one or more files in the directory given by target based on the name and
+type of the entry.</p>
+<p>If not overridden, this function will export a binary representation of the
+entry to a .entry file.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract(self, target, **kwargs):
+  &#34;&#34;&#34;Extracts this entry from the package to the target directory.
+
+  This exports the asset as export_file might, but doesn&#39;t give the user choice
+  as to how that export is performed. This function is expected to create
+  one or more files in the directory given by target based on the name and
+  type of the entry.
+
+  If not overridden, this function will export a binary representation of the
+  entry to a .entry file.
+  &#34;&#34;&#34;
+  self._export(self._extraction_path(target) + &#39;.entry&#39;)</code></pre>
+</details>
+</dd>
 <dt id="deppth.entries.EntryBase.import_file"><code class="name flex">
 <span>def <span class="ident">import_file</span></span>(<span>self, path)</span>
 </code></dt>
@@ -1248,6 +1524,19 @@ def read_from(self, stream, isManifest=False, version=7):
   pass</code></pre>
 </details>
 </dd>
+<dt id="deppth.entries.EntryBase.short_name"><code class="name flex">
+<span>def <span class="ident">short_name</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def short_name(self):
+  return self.name.split(&#39;\\&#39;)[-1]</code></pre>
+</details>
+</dd>
 <dt id="deppth.entries.EntryBase.write_to"><code class="name flex">
 <span>def <span class="ident">write_to</span></span>(<span>self, stream)</span>
 </code></dt>
@@ -1299,24 +1588,39 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class IncludePackageEntry(EntryBase):
-    &#34;&#34;&#34;Represents a package include reference.
+  &#34;&#34;&#34;Represents a package include reference.
 
-    These entries are simply references to other packages. When
-    read by the game engine, the named packages are also loaded.
+  These entries are simply references to other packages. When
+  read by the game engine, the named packages are also loaded.
 
-    Currently does not support import or export (other than .entry).
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        self.name = stream.read_string()
-    
-    def write_to(self, stream):
-        stream.write_string(self.name)</code></pre>
+  Currently does not support import or export (other than .entry).
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    self.name = stream.read_string()
+  
+  def write_to(self, stream):
+    stream.write_string(self.name)
+
+  def extract(self, target, **kwargs):
+    if &#39;includes&#39; in kwargs:
+      kwargs[&#39;includes&#39;].append(self.name)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="deppth.entries.IncludePackageEntry.typeCode"><code class="name">var <span class="ident">typeCode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="deppth.entries.IncludePackageEntry.typeName"><code class="name">var <span class="ident">typeName</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></b></code>:
@@ -1324,6 +1628,7 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.EntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.EntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
@@ -1357,32 +1662,51 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class SpineEntry(EntryBase):
-    &#34;&#34;&#34;Represents a spine asset.
+  &#34;&#34;&#34;Represents a spine asset.
 
-    Spine is a 2D skeletal animation framework for video games.
-    The data in a spine entry consist of an identifier, the spine
-    data itself, and a texture atlas (using the libgdx format, not
-    the format used by other atlases).
+  Spine is a 2D skeletal animation framework for video games.
+  The data in a spine entry consist of an identifier, the spine
+  data itself, and a texture atlas (using the libgdx format, not
+  the format used by other atlases).
 
-    Currently does not support import or export (other than .entry).
-    &#34;&#34;&#34;
-    def read_from(self, stream, isManifest=False, version=7):
-        self.version = ord(stream.read(1))
-        self.name = stream.read_string()
-        self.spineAtlas = stream.read_big_string()
-        self.spineData = stream.read_big_string()
+  Currently does not support import or export (other than .entry).
+  &#34;&#34;&#34;
+  def read_from(self, stream, isManifest=False, version=7):
+    self.version = ord(stream.read(1))
+    self.name = stream.read_string()
+    self.spineAtlas = stream.read_big_string()
+    self.spineData = stream.read_big_string()
 
-    def write_to(self, stream):
-        stream.write(bytes([self.version]))
-        stream.write_string(self.name)
-        stream.write_big_string(self.spineAtlas)
-        stream.write_big_string(self.spineData)</code></pre>
+  def write_to(self, stream):
+    stream.write(bytes([self.version]))
+    stream.write_string(self.name)
+    stream.write_big_string(self.spineAtlas)
+    stream.write_big_string(self.spineData)
+
+  def extract(self, target, **kwargs):
+    path = os.path.join(target, &#39;spines&#39;)
+    os.makedirs(path, exist_ok=True)
+    super().extract(target, **kwargs)
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;spines&#39;, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="deppth.entries.SpineEntry.typeCode"><code class="name">var <span class="ident">typeCode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="deppth.entries.SpineEntry.typeName"><code class="name">var <span class="ident">typeName</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></b></code>:
@@ -1390,6 +1714,7 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.EntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.EntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
@@ -1425,18 +1750,19 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Texture3DEntry(XNBAssetEntryBase):
-    &#34;&#34;&#34;Represents a 3D Texture asset.
+  &#34;&#34;&#34;Represents a 3D Texture asset.
 
-    These entires represent encoded three-dimensional images. The data within
-    is essentially a stack of 2-d images -- you could imagine the data as voxels.
-    3-d modeling/rendering software generally assumes an image format consisting
-    of defined surfaces and shapes instead. It is therefore difficult to export
-    this type of asset to something useful, unlike it&#39;s 2D cousin.
+  These entires represent encoded three-dimensional images. The data within
+  is essentially a stack of 2-d images -- you could imagine the data as voxels.
+  3-d modeling/rendering software generally assumes an image format consisting
+  of defined surfaces and shapes instead. It is therefore difficult to export
+  this type of asset to something useful, unlike it&#39;s 2D cousin.
 
-    For now, exporting and importing to anything other than .xnb or .entry is
-    unsupported.
-    &#34;&#34;&#34;
-    pass</code></pre>
+  For now, exporting and importing to anything other than .xnb or .entry is
+  unsupported.
+  &#34;&#34;&#34;
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;textures&#39;, &#39;3d&#39;, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1444,6 +1770,17 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="deppth.entries.Texture3DEntry.typeCode"><code class="name">var <span class="ident">typeCode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="deppth.entries.Texture3DEntry.typeName"><code class="name">var <span class="ident">typeName</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="deppth.entries.XNBAssetEntryBase" href="#deppth.entries.XNBAssetEntryBase">XNBAssetEntryBase</a></b></code>:
@@ -1451,6 +1788,7 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.XNBAssetEntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
@@ -1484,114 +1822,121 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class TextureEntry(XNBAssetEntryBase):
-    &#34;&#34;&#34;Represents a 2D Texture asset.
+  &#34;&#34;&#34;Represents a 2D Texture asset.
 
-    Texture entries comprise a majority of packages&#39; contents. These entries
-    are compiled spritesheets which are paired with an Atlas file in the
-    package&#39;s manifest to identify the various sprites contained within.
+  Texture entries comprise a majority of packages&#39; contents. These entries
+  are compiled spritesheets which are paired with an Atlas file in the
+  package&#39;s manifest to identify the various sprites contained within.
 
-    These entries can be exported to and imported from various image formats,
-    but doing so requires the pillow/PIL module.
-    &#34;&#34;&#34;
-    @requires(&#39;PIL.Image&#39;)
-    def _export(self, path):
-        # If the user didn&#39;t ask for a supported image format, then don&#39;t export
-        if os.path.splitext(path)[1] not in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.bmp&#39;]:
-            return super()._export(path)
+  These entries can be exported to and imported from various image formats,
+  but doing so requires the pillow/PIL module.
+  &#34;&#34;&#34;
+  def extract(self, target, **kwargs):
+    if &#39;subtextures&#39; in kwargs and kwargs[&#39;subtextures&#39;]:
+      self._export_subtextures(os.path.join(target, &#39;textures&#39;))
+    else:
+      os.makedirs(os.path.join(target, &#39;textures&#39;, &#39;atlases&#39;), exist_ok=True)
+      self._export(self._extraction_path(target) + &#39;.png&#39;)
 
-        self._get_image().save(path)
-        return True
+  @requires(&#39;PIL.Image&#39;)
+  def _export(self, path):
+    # If the user didn&#39;t ask for a supported image format, then don&#39;t export
+    if os.path.splitext(path)[1] not in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.bmp&#39;]:
+      return super()._export(path)
 
-    @requires(&#39;PIL.Image&#39;)
-    def _get_image(self):
-        dataio = _BytesIO(self.data)
+    self._get_image().save(path)
+    return True
 
-        # The first four bytes should be b&#39;XNBw&#39;
-        dataio.seek(4)
-        
-        # The next byte is the XNB Version number, which should be 5 or 6
-        xnbversion = ord(dataio.read(1))
-        if not xnbversion in [5, 6]:
-            raise ValueError(f&#39;Invalid XNB Version: {xnbversion}&#39;)
-        
-        # The next byte represents some flags, which we ignore, possibly at our peril. 
-        # If the flags aren&#39;t 0, bail. The data could be compressed
-        flags = dataio.read(1)
-        if flags != b&#39;\x00&#39;:
-            raise NotImplementedError(f&#39;Cannot export compressed XNB data. Flags: {flags}&#39;)
-        
-        # The next four bytes are the file length, but we don&#39;t actually use this right now
-        dataio.read(4)
+  @requires(&#39;PIL.Image&#39;)
+  def _get_image(self):
+    dataio = _BytesIO(self.data)
 
-        # For version 5 XNB&#39;s, there&#39;s some extra nonsense we can just skip past
-        if (xnbversion == 5):
-            num = dataio.read_7bit_encoded_int()
-            for _ in range(0, num):
-                dataio.read_string()
-                dataio.read_int(&#39;little&#39;)
-            dataio.read_7bit_encoded_int()
-            dataio.read_7bit_encoded_int()
-
-        imgformat = dataio.read_int(&#39;little&#39;)
-        size = (dataio.read_int(&#39;little&#39;), dataio.read_int(&#39;little&#39;))
-        dataio.read_int(&#39;little&#39;)  # mip level, it should always be 1
-        numbytes = dataio.read_int(&#39;little&#39;)
-        imgbytes = dataio.read(numbytes)
-        if imgformat == 0:
-            image = PIL.Image.frombytes(&#39;RGBA&#39;, size, imgbytes, &#39;raw&#39;, &#39;BGRA&#39;)
-        elif imgformat == 6:
-            image = PIL.Image.frombytes(&#39;RGBA&#39;, size, imgbytes, &#39;bcn&#39;, (3,))
-        elif imgformat == 28:
-            image = PIL.Image.frombytes(&#39;RGBA&#39;, size, imgbytes, &#39;bcn&#39;, (7,))
-        else:
-            raise Exception(f&#39;Unsupported image format {imgformat}&#39;)
-        return image
+    # The first four bytes should be b&#39;XNBw&#39;
+    dataio.seek(4)
     
-    def import_file(self, path):
-        # If the user didn&#39;t give a supported image format, don&#39;t import here
-        if os.path.splitext(path)[1] not in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.bmp&#39;]:
-            return super()._import(path)
+    # The next byte is the XNB Version number, which should be 5 or 6
+    xnbversion = ord(dataio.read(1))
+    if not xnbversion in [5, 6]:
+      raise ValueError(f&#39;Invalid XNB Version: {xnbversion}&#39;)
+    
+    # The next byte represents some flags, which we ignore, possibly at our peril. 
+    # If the flags aren&#39;t 0, bail. The data could be compressed
+    flags = dataio.read(1)
+    if flags != b&#39;\x00&#39;:
+      raise NotImplementedError(f&#39;Cannot export compressed XNB data. Flags: {flags}&#39;)
+    
+    # The next four bytes are the file length, but we don&#39;t actually use this right now
+    dataio.read(4)
 
-        raise NotImplementedError(&#34;Not implemented yet&#34;)
+    # For version 5 XNB&#39;s, there&#39;s some extra nonsense we can just skip past
+    if (xnbversion == 5):
+      num = dataio.read_7bit_encoded_int()
+      for _ in range(0, num):
+        dataio.read_string()
+        dataio.read_int(&#39;little&#39;)
+      dataio.read_7bit_encoded_int()
+      dataio.read_7bit_encoded_int()
 
-    def unpack(self, path):
-        # Make a directory to hold the contents
-        subpath = self.name.replace(&#39;\\&#39;, &#39;/&#39;)
-        fullpath = os.path.join(path, subpath)
-        os.makedirs(fullpath, exist_ok=True)
+    imgformat = dataio.read_int(&#39;little&#39;)
+    self.imgsize = (dataio.read_int(&#39;little&#39;), dataio.read_int(&#39;little&#39;))
+    dataio.read_int(&#39;little&#39;)  # mip level, it should always be 1
+    numbytes = dataio.read_int(&#39;little&#39;)
+    imgbytes = dataio.read(numbytes)
+    if imgformat == 0:
+      image = PIL.Image.frombytes(&#39;RGBA&#39;, self.imgsize, imgbytes, &#39;raw&#39;, &#39;BGRA&#39;)
+    elif imgformat == 6:
+      image = PIL.Image.frombytes(&#39;RGBA&#39;, self.imgsize, imgbytes, &#39;bcn&#39;, (3,))
+    elif imgformat == 28:
+      image = PIL.Image.frombytes(&#39;RGBA&#39;, self.imgsize, imgbytes, &#39;bcn&#39;, (7,))
+    else:
+      raise Exception(f&#39;Unsupported image format {imgformat}&#39;)
+    return image
+  
+  @requires(&#39;PIL.Image&#39;)
+  def _import_image_data(self, path):
+    image = PIL.Image.open(path)
 
-        # First, get the image out of the entry data
-        image = self._get_image()
-        atlas = self.manifest_entry
-        for subatlas in atlas.subAtlases:
-            rect = subatlas[&#39;rect&#39;]
-            box = (rect[&#39;x&#39;], 
-            rect[&#39;y&#39;], 
-            rect[&#39;x&#39;]+rect[&#39;width&#39;], 
-            rect[&#39;y&#39;]+rect[&#39;height&#39;])
-            subimage = image.crop(box)
-            subatlasdir, subatlasfile = os.path.split(subatlas[&#39;name&#39;])
-            os.makedirs(os.path.join(fullpath, subatlasdir), exist_ok=True)
-            subimage.save(os.path.join(fullpath, subatlasdir, f&#39;{subatlasfile}.png&#39;))</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="deppth.entries.XNBAssetEntryBase" href="#deppth.entries.XNBAssetEntryBase">XNBAssetEntryBase</a></li>
-<li><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></li>
-<li>abc.ABC</li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="deppth.entries.TextureEntry.unpack"><code class="name flex">
-<span>def <span class="ident">unpack</span></span>(<span>self, path)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def unpack(self, path):
+    dataio = _BytesIO()
+    xnb_inner_data = self._create_inner_xnb(image)
+
+    # Write the XNB &#39;magic&#39; header
+    dataio.write(bytes(&#39;XNBw&#39;, &#39;ascii&#39;))
+
+    # Write the XNB version number, which for now is always 6
+    dataio.write(b&#39;\x06&#39;)
+
+    # Write a hard-coded 0 for flags
+    dataio.write(b&#39;\x00&#39;)
+
+    # Write the file size (inner length plus 10 for the header)
+    dataio.write_int(len(xnb_inner_data) + 10, &#39;little&#39;)
+
+    # Write the payload
+    dataio.write(xnb_inner_data)
+
+    self.data = dataio.getvalue()
+    self.size = len(self.data)
+  
+  @requires(&#39;PIL.Image&#39;)
+  def _create_inner_xnb(self, image):
+    dataio = _BytesIO()
+    dataio.write_int(0, &#39;little&#39;) # Format for now is always 0
+    dataio.write_int(image.width, &#39;little&#39;)
+    dataio.write_int(image.height, &#39;little&#39;)
+    dataio.write_int(1, &#39;little&#39;)
+    imgbytes = image.convert(&#39;RGBA&#39;).tobytes(&#39;raw&#39;, &#39;BGRA&#39;, 0, 1)
+    dataio.write_int(len(imgbytes), &#39;little&#39;)
+    dataio.write(imgbytes)
+    return dataio.getvalue()
+
+  def import_file(self, path):
+    # If the user didn&#39;t give a supported image format, don&#39;t import here
+    if os.path.splitext(path)[1] not in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.bmp&#39;]:
+      return super()._import(path)
+
+    self._import_image_data(path)
+
+  def _unpack(self, path):
     # Make a directory to hold the contents
     subpath = self.name.replace(&#39;\\&#39;, &#39;/&#39;)
     fullpath = os.path.join(path, subpath)
@@ -1601,16 +1946,50 @@ Packages for Transistor and Pyre are version 5.</p></div>
     image = self._get_image()
     atlas = self.manifest_entry
     for subatlas in atlas.subAtlases:
-        rect = subatlas[&#39;rect&#39;]
-        box = (rect[&#39;x&#39;], 
-        rect[&#39;y&#39;], 
-        rect[&#39;x&#39;]+rect[&#39;width&#39;], 
-        rect[&#39;y&#39;]+rect[&#39;height&#39;])
-        subimage = image.crop(box)
-        subatlasdir, subatlasfile = os.path.split(subatlas[&#39;name&#39;])
-        os.makedirs(os.path.join(fullpath, subatlasdir), exist_ok=True)
-        subimage.save(os.path.join(fullpath, subatlasdir, f&#39;{subatlasfile}.png&#39;))</code></pre>
+      rect = subatlas[&#39;rect&#39;]
+      box = (rect[&#39;x&#39;], 
+      rect[&#39;y&#39;], 
+      rect[&#39;x&#39;]+rect[&#39;width&#39;], 
+      rect[&#39;y&#39;]+rect[&#39;height&#39;])
+      subimage = image.crop(box)
+      subatlasdir, subatlasfile = os.path.split(subatlas[&#39;name&#39;])
+      os.makedirs(os.path.join(fullpath, subatlasdir), exist_ok=True)
+      subimage.save(os.path.join(fullpath, subatlasdir, f&#39;{subatlasfile}.png&#39;))
+
+  @requires(&#39;PIL.Image&#39;)
+  def _export_subtextures(self, target):
+    # First, get the image out of the entry data
+    image = self._get_image()
+    atlas = self.manifest_entry
+    for subatlas in atlas.subAtlases:
+      rect = subatlas[&#39;rect&#39;]
+      box = (rect[&#39;x&#39;], 
+      rect[&#39;y&#39;], 
+      rect[&#39;x&#39;]+rect[&#39;width&#39;], 
+      rect[&#39;y&#39;]+rect[&#39;height&#39;])
+      subimage = image.crop(box)
+      subatlasdir, subatlasfile = os.path.split(subatlas[&#39;name&#39;])
+      os.makedirs(os.path.join(target, subatlasdir), exist_ok=True)
+      subimage.save(os.path.join(target, subatlasdir, f&#39;{subatlasfile}.png&#39;))
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;textures&#39;, &#39;atlases&#39;, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="deppth.entries.XNBAssetEntryBase" href="#deppth.entries.XNBAssetEntryBase">XNBAssetEntryBase</a></li>
+<li><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="deppth.entries.TextureEntry.typeCode"><code class="name">var <span class="ident">typeCode</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="deppth.entries.TextureEntry.typeName"><code class="name">var <span class="ident">typeName</span></code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
@@ -1620,6 +1999,7 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.XNBAssetEntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
 <li><code><a title="deppth.entries.XNBAssetEntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
@@ -1676,6 +2056,9 @@ Packages for Transistor and Pyre are version 5.</p></div>
     dispname = self.name.split(&#39;\\&#39;)[-1]
     return f&#39;{self.entry_type()}: {dispname}&#39;
 
+  def extract(self, target, **kwargs):
+    self._export(self._extraction_path(target) + &#39;.xnb&#39;)
+
   def _export(self, path):
     if os.path.splitext(path)[1] != &#39;.xnb&#39;:
       return super()._export(path)
@@ -1692,7 +2075,10 @@ Packages for Transistor and Pyre are version 5.</p></div>
     with open(path, &#39;rb&#39;) as f:
       self.data = f.read()
 
-    return True</code></pre>
+    return True
+
+  def _extraction_path(self, target):
+    return os.path.join(target, &#39;textures&#39;, self.name.split(&#39;\\&#39;)[-1])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1711,6 +2097,7 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.EntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.EntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
@@ -1736,18 +2123,31 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <ul class="">
 <li><code><a title="deppth.entries.entry" href="#deppth.entries.entry">entry</a></code></li>
 <li><code><a title="deppth.entries.get_entry" href="#deppth.entries.get_entry">get_entry</a></code></li>
+<li><code><a title="deppth.entries.import_entry" href="#deppth.entries.import_entry">import_entry</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
 <h4><code><a title="deppth.entries.AtlasEntry" href="#deppth.entries.AtlasEntry">AtlasEntry</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.entries.AtlasEntry.typeCode" href="#deppth.entries.AtlasEntry.typeCode">typeCode</a></code></li>
+<li><code><a title="deppth.entries.AtlasEntry.typeName" href="#deppth.entries.AtlasEntry.typeName">typeName</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="deppth.entries.BinkAtlasEntry" href="#deppth.entries.BinkAtlasEntry">BinkAtlasEntry</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.entries.BinkAtlasEntry.typeCode" href="#deppth.entries.BinkAtlasEntry.typeCode">typeCode</a></code></li>
+<li><code><a title="deppth.entries.BinkAtlasEntry.typeName" href="#deppth.entries.BinkAtlasEntry.typeName">typeName</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="deppth.entries.BinkEntry" href="#deppth.entries.BinkEntry">BinkEntry</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.entries.BinkEntry.typeCode" href="#deppth.entries.BinkEntry.typeCode">typeCode</a></code></li>
+<li><code><a title="deppth.entries.BinkEntry.typeName" href="#deppth.entries.BinkEntry.typeName">typeName</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="deppth.entries.EntryBase" href="#deppth.entries.EntryBase">EntryBase</a></code></h4>
@@ -1755,24 +2155,39 @@ Packages for Transistor and Pyre are version 5.</p></div>
 <li><code><a title="deppth.entries.EntryBase.display_name" href="#deppth.entries.EntryBase.display_name">display_name</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.entry_type" href="#deppth.entries.EntryBase.entry_type">entry_type</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.export_file" href="#deppth.entries.EntryBase.export_file">export_file</a></code></li>
+<li><code><a title="deppth.entries.EntryBase.extract" href="#deppth.entries.EntryBase.extract">extract</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.import_file" href="#deppth.entries.EntryBase.import_file">import_file</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.read_from" href="#deppth.entries.EntryBase.read_from">read_from</a></code></li>
+<li><code><a title="deppth.entries.EntryBase.short_name" href="#deppth.entries.EntryBase.short_name">short_name</a></code></li>
 <li><code><a title="deppth.entries.EntryBase.write_to" href="#deppth.entries.EntryBase.write_to">write_to</a></code></li>
 </ul>
 </li>
 <li>
 <h4><code><a title="deppth.entries.IncludePackageEntry" href="#deppth.entries.IncludePackageEntry">IncludePackageEntry</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.entries.IncludePackageEntry.typeCode" href="#deppth.entries.IncludePackageEntry.typeCode">typeCode</a></code></li>
+<li><code><a title="deppth.entries.IncludePackageEntry.typeName" href="#deppth.entries.IncludePackageEntry.typeName">typeName</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="deppth.entries.SpineEntry" href="#deppth.entries.SpineEntry">SpineEntry</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.entries.SpineEntry.typeCode" href="#deppth.entries.SpineEntry.typeCode">typeCode</a></code></li>
+<li><code><a title="deppth.entries.SpineEntry.typeName" href="#deppth.entries.SpineEntry.typeName">typeName</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="deppth.entries.Texture3DEntry" href="#deppth.entries.Texture3DEntry">Texture3DEntry</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.entries.Texture3DEntry.typeCode" href="#deppth.entries.Texture3DEntry.typeCode">typeCode</a></code></li>
+<li><code><a title="deppth.entries.Texture3DEntry.typeName" href="#deppth.entries.Texture3DEntry.typeName">typeName</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="deppth.entries.TextureEntry" href="#deppth.entries.TextureEntry">TextureEntry</a></code></h4>
 <ul class="">
-<li><code><a title="deppth.entries.TextureEntry.unpack" href="#deppth.entries.TextureEntry.unpack">unpack</a></code></li>
+<li><code><a title="deppth.entries.TextureEntry.typeCode" href="#deppth.entries.TextureEntry.typeCode">typeCode</a></code></li>
+<li><code><a title="deppth.entries.TextureEntry.typeName" href="#deppth.entries.TextureEntry.typeName">typeName</a></code></li>
 </ul>
 </li>
 <li>
