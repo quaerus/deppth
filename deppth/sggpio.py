@@ -1,7 +1,8 @@
 import io
 import os
+import fnmatch
 
-from .compression import get_chunkprocessor, get_chunkprocessor_by_name
+from .compression import get_chunkprocessor, get_chunkprocessor_by_name, validate_compressor_name
 from .utils import IOExtensionMixin as _IOExtensionMixin, FileIO as _FileIO, BytesIO as _BytesIO
 from .entries import get_entry, import_entry
 
@@ -11,6 +12,7 @@ CHUNK_SIZE = 0x2000000              # The size of uncompressed chunks in package
 PACKAGE_VERSION_HADES = 7
 PACKAGE_VERSION_TRANSISTOR = 5
 PACKAGE_VERSION_PYRE = 5
+PACKAGE_VERSIONS = [PACKAGE_VERSION_HADES, PACKAGE_VERSION_PYRE, PACKAGE_VERSION_TRANSISTOR]
 
 ENTRY_CODE_END_OF_CHUNK = b'\xBE'
 ENTRY_CODE_END_OF_FILE = b'\xFF'
@@ -535,10 +537,10 @@ class PackageWriter(PackageIO):
 
 
 class PackageWithManifestReader(PackageReader):
-  def __init__(self, name, closefd=True, opener=None, is_manifest=False):
-    super().__init__(f'{name}.pkg', closefd, opener, is_manifest)
-    if os.path.exists(f'{name}.pkg_manifest'):
-      self.manifest = PackageReader.load_package(f'{name}.pkg_manifest')
+  def __init__(self, name, closefd=True, opener=None):
+    super().__init__(f'{name}', closefd, opener)
+    if os.path.exists(f'{name}_manifest'):
+      self.manifest = PackageReader.load_package(f'{name}_manifest', True)
     else:
       self.manifest = None
 
@@ -552,3 +554,86 @@ class PackageWithManifestReader(PackageReader):
       entry.manifest_entry = self.manifest[entry.name]
 
     return entry
+
+class PackageWithManifestWriter(PackageWriter):
+  def __init__(self, name, closefd=True, opener=None, compressor='uncompressed', version=PACKAGE_VERSION_HADES):
+    super().__init__(name, closefd, opener, compressor, version)
+    manifest_name = f'{name}_manifest'
+    self.manifest = PackageWriter(manifest_name, closefd, opener, version=version, is_manifest=True)
+
+  def write_entry_with_manifest(self, entry):
+    self.write_entry(entry)
+    if self.manifest is not None and hasattr(entry, 'manifest_entry'):
+      self.manifest.write_entry(entry.manifest_entry)
+
+  def close(self):
+    super().close()
+    self.manifest.close()
+
+def patch(name, *patches, logger=lambda s : None):
+  # Rename existing package/manifest so we can edit in place
+  package_old_path = f'{name}.old'
+  os.replace(name, package_old_path)
+  manifest_path = f'{name}_manifest'
+  manifest_old_path = f'{package_old_path}_manifest'
+  os.replace(manifest_path, manifest_old_path)
+
+  # Get the entries to replace in the package from the patches
+  patch_entries = {}
+  for patch in patches:
+    for entry in PackageWithManifestReader(patch):
+      patch_entries[entry.name] = entry
+
+  # Open the old package for reading and a new package for writing
+  with PackageWithManifestReader(package_old_path) as source, PackageWithManifestWriter(name, compressor=source.compressor, version=source.version) as target:
+    # Scan source package, replacing entries with the patched versions if present
+    for entry in source:
+      if entry.name in patch_entries:
+        # Write the entry from the patches
+        logger(f'Applying patch to entry {entry.name}')
+        target.write_entry_with_manifest(patch_entries.pop(entry.name))
+      else:
+        # No matching entry in patches, so just write the original entry
+        logger(f'No patch for entry {entry.name}, using original entry')
+        target.write_entry_with_manifest(entry)
+
+    # Append any entries in patches that weren't in the source
+    for entry in patch_entries.values():
+      logger(f'Appending entry {entry.name}')
+      target.write_entry_with_manifest(entry)
+        
+  # Delete the old files
+  os.remove(package_old_path)
+  os.remove(manifest_old_path)
+
+def load_package(name):
+  """Loads the entire contents of the package given by name and returns an array of entries."""
+  is_manifest = name.endswith('_manifest')
+  return PackageReader.load_package(name, is_manifest)
+
+def open_package(name, mode, closefd=True, opener=None, compressor='lz4', version=PACKAGE_VERSION_HADES):
+  """Opens the package with base filename given by name. 
+  
+  mode - Valid modes are 'r', 'w', 'rm', and 'wm'. R for Read, W for Write, M for include Manifest.
+  closefd, opener - Similar to the same parameters on os.open
+
+  These parameters are only used for writing; if reading the values are inferred from the package data:
+  compressor - Compression to use on the package. Valid values are 'uncompressed', 'lz4', and 'lzf'
+  version - Should be a PACKAGE_VERSION_* constant depending on the game (7 if Hades, 5 otherwise)
+  """
+  if not validate_compressor_name(compressor):
+    raise ValueError(f'Invalid compressor: {compressor}')
+
+  if not version in PACKAGE_VERSIONS:
+    raise ValueError(f'Invalid version: {version}')
+
+  if mode == 'r':
+    return PackageReader(name, closefd=closefd, opener=opener)
+  elif mode == 'w':
+    return PackageWriter(name, closefd=closefd, opener=opener, compressor=compressor, version=version)
+  elif mode == 'rm':
+    return PackageWithManifestReader(name, closefd=closefd, opener=opener)
+  elif mode == 'wm':
+    return PackageWithManifestWriter(name, closefd=closefd, opener=opener, compressor=compressor, version=version)
+  else:
+    raise ValueError(f'Invalid mode: {mode}')

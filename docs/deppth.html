@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.1" />
 <title>deppth.deppth API documentation</title>
-<meta name="description" content="Main entry point for the command-line interface" />
+<meta name="description" content="Top-level API exposure of package actions" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,126 +22,91 @@
 <h1 class="title">Module <code>deppth.deppth</code></h1>
 </header>
 <section id="section-intro">
-<p>Main entry point for the command-line interface</p>
+<p>Top-level API exposure of package actions</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;Main entry point for the command-line interface&#34;&#34;&#34;
+<pre><code class="python">&#34;&#34;&#34;Top-level API exposure of package actions&#34;&#34;&#34;
 
-__version__ = &#34;0.0.3.0&#34;
+__version__ = &#34;0.1.0.0&#34;
 
 import os
 import sys
-import argparse
 import fnmatch
 
-from .sggpio import PackageWithManifestReader, PackageReader, PackageWriter
+from .sggpio import PackageWithManifestReader, PackageWithManifestWriter, PackageReader, PackageWriter
 from .entries import AtlasEntry, TextureEntry
-
-def main():
-  parser = argparse.ArgumentParser(prog=&#39;deppth&#39;, description=&#39;Decompress, Extract, Pack for Pyre, Transistor, and Hades&#39;)
-  subparsers = parser.add_subparsers(help=&#39;The action to perform&#39;, dest=&#39;action&#39;)
-
-  # List parser
-  list_parser = subparsers.add_parser(&#39;list&#39;, help=&#39;List the entries of a package&#39;, aliases=[&#39;ls&#39;])
-  list_parser.add_argument(&#39;path&#39;, metavar=&#39;path&#39;, type=str, help=&#39;The path to the package to act on&#39;)
-  list_parser.add_argument(&#39;patterns&#39;, metavar=&#39;patterns&#39;, nargs=&#39;*&#39;, help=&#39;Patterns to search for&#39;)
-  list_parser.set_defaults(func=plist)
-
-  # Extract parser
-  extract_parser = subparsers.add_parser(&#39;extract&#39;, help=&#39;Extract assets from a package&#39;, aliases=[&#39;ex&#39;])
-  extract_parser.add_argument(&#39;source&#39;, metavar=&#39;source&#39;, type=str, help=&#39;The path to extract&#39;)
-  extract_parser.add_argument(&#39;-t&#39;, &#39;--target&#39;, metavar=&#39;target&#39;, default=&#39;&#39;, help=&#39;Where to extract the package&#39;)
-  extract_parser.add_argument(&#39;-e&#39;, &#39;--entries&#39;, nargs=&#39;*&#39;, metavar=&#39;entry&#39;, help=&#39;One or more entry names to extract&#39;)
-  extract_parser.add_argument(&#39;-s&#39;, &#39;--subtextures&#39;, action=&#39;store_true&#39;, default=False, help=&#39;Export subtextures instead of full atlases&#39;)
-  extract_parser.set_defaults(func=extract)
-
-  # Pack parser
-  pack_parser = subparsers.add_parser(&#39;pack&#39;, help=&#39;Pack assets into a package&#39;, aliases=[&#39;pk&#39;])
-  pack_parser.add_argument(&#39;-s&#39;, &#39;--source&#39;, metavar=&#39;source&#39;, default=&#39;&#39;, type=str, help=&#39;Path to the folder to pack, default is current folder&#39;)
-  pack_parser.add_argument(&#39;-t&#39;, &#39;--target&#39;, metavar=&#39;target&#39;, default=&#39;&#39;, help=&#39;Path of output file&#39;)
-  pack_parser.set_defaults(func=pack)
-
-  args = parser.parse_args()
-  args.func(args)
-
-def plist(args):
-  path = args.path
-  patterns = args.patterns
-
-  if not os.path.exists(path + &#39;.pkg&#39;):
-    print(&#39;Error: Specified package does not exist&#39;)
-    return
-
-  with PackageWithManifestReader(path) as f:
+ 
+def list_contents(name, *patterns, logger=lambda s: None):
+  with PackageWithManifestReader(name) as f:
     for entry in f:
-      if not entry_match(patterns, entry):
+      if not _entry_match(patterns, entry):
         continue
       
-      print(f&#39;{entry.name}&#39;)
+      logger(f&#39;{entry.name}&#39;)
 
       atlas = entry.manifest_entry
       if atlas and hasattr(atlas, &#39;subAtlases&#39;):
         for subatlas in atlas.subAtlases:
           subname = subatlas[&#39;name&#39;]
-          print(f&#39;  {subname}&#39;)
+          logger(f&#39;  {subname}&#39;)
 
-def extract(args):
-  source = args.source
-  target = args.target
-  entries = args.entries
-  subtextures = args.subtextures
+def extract(package, target_dir, *entries, subtextures=False, logger=lambda s: None):
   includes = []
 
-  if len(target) == 0:
-    target = source
+  if len(target_dir) == 0:
+    target_dir = os.path.splitext(package)[0]
 
-  os.makedirs(target, exist_ok=True)
-  with PackageWithManifestReader(source) as f:
+  os.makedirs(target_dir, exist_ok=True)
+  with PackageWithManifestReader(package) as f:
     if f.manifest is None and subtextures:
-      print(&#39;Exporting subtextures requires a manifest. --subtextures flag ignored&#39;)
+      logger(&#39;Exporting subtextures requires a manifest. --subtextures flag ignored&#39;)
       subtextures=False
 
     for entry in f:
-      if not entry_match(entries, entry):
+      if not _entry_match(entries, entry):
         continue
 
-      entry.extract(target, subtextures=subtextures)
+      logger(f&#39;Extracting entry {entry.name}&#39;)
+      entry.extract(target_dir, subtextures=subtextures)
 
     if not f.manifest is None:
       for entry in f.manifest.values():
-        if not entry_match(entries, entry):
+        if not _entry_match(entries, entry):
           continue
-
-        entry.extract(target, subtextures=subtextures, includes=includes)
+        
+        logger(f&#39;Extracting manifest entry {entry.name}&#39;)
+        entry.extract(target_dir, subtextures=subtextures, includes=includes)
 
     if len(includes) &gt; 0:
-      include_dir = os.path.join(target, &#39;manifest&#39;)
+      include_dir = os.path.join(target_dir, &#39;manifest&#39;)
       os.makedirs(include_dir, exist_ok=True)
       with open(os.path.join(include_dir, &#39;includes.txt&#39;), &#39;w&#39;) as inc_f:
+        logger(f&#39;Writing includes to {inc_f.name}&#39;)
         for include in includes:
           inc_f.write(include)
           inc_f.write(&#39;\n&#39;)
 
-def pack(args):
+def pack(source_dir, package, *entries, logger=lambda s: None):
   curdir = os.getcwd()
-  source = os.path.join(curdir, args.source)
-  target = args.target
-  #entries = args.entries
+  source = os.path.join(curdir, source_dir)
+  target = package
 
   if len(target) == 0:
     target = f&#39;{os.path.basename(source)}.pkg&#39;
 
-  print(f&#39;Packing {source} to target package {target}&#39;)
+  logger(f&#39;Packing {source} to target package {target}&#39;)
 
   manifest_dir = os.path.join(source, &#39;manifest&#39;)
   manifest_entries = []
-  print(&#39;Scanning Manifest&#39;)
+  logger(&#39;Scanning Manifest&#39;)
   for filename in os.listdir(manifest_dir):
     if filename.endswith(&#39;.json&#39;):
-      entry = load_manifest_entry(os.path.join(manifest_dir, filename))
-      print(entry.name)
+      entry = _load_manifest_entry(os.path.join(manifest_dir, filename))
+      if not _entry_match(entries, entry):
+        continue
+      logger(entry.name)
       manifest_entries.append(entry)
   
   with PackageWriter(target, compressor=&#39;lz4&#39;) as pkg_writer, PackageWriter(f&#39;{target}_manifest&#39;) as manifest_writer:
@@ -149,32 +114,67 @@ def pack(args):
       entry_name = manifest_entry.name.split(&#39;\\&#39;)[-1]
       entry_sheet_path = os.path.join(source, &#39;textures&#39;, &#39;atlases&#39;, f&#39;{entry_name}.png&#39;)
       if os.path.exists(entry_sheet_path):
-        print(f&#39;Packing {entry_sheet_path}&#39;)
+        logger(f&#39;Packing {entry_sheet_path}&#39;)
         manifest_writer.write_entry(manifest_entry)
         texture_entry = TextureEntry()
         texture_entry.name = manifest_entry.referencedTextureName
         texture_entry.import_file(entry_sheet_path)
         pkg_writer.write_entry(texture_entry)
       else:
-        print(f&#39;Could not find atlas image for {entry_name}. Entry will be skipped.&#39;)
+        logger(f&#39;Could not find atlas image for {entry_name}. Entry will be skipped.&#39;)
 
-def entry_match(patterns, entry):
-  if patterns is None or len(patterns) == 0:
-    return True
-  else:
-    for pattern in patterns:
-      if fnmatch.fnmatch(entry.short_name(), pattern):
-        return True
-  return False
+def patch(name, *patches, logger=lambda s : None):
+  # Rename existing package/manifest so we can edit in place
+  package_old_path = f&#39;{name}.old&#39;
+  os.replace(name, package_old_path)
+  manifest_path = f&#39;{name}_manifest&#39;
+  manifest_old_path = f&#39;{package_old_path}_manifest&#39;
+  os.replace(manifest_path, manifest_old_path)
 
-def load_manifest_entry(filename):
+  # Get the entries to replace in the package from the patches
+  patch_entries = {}
+  for patch in patches:
+    for entry in PackageWithManifestReader(patch):
+      patch_entries[entry.name] = entry
+
+  # Open the old package for reading and a new package for writing
+  with PackageWithManifestReader(package_old_path) as source, PackageWithManifestWriter(name, compressor=source.compressor, version=source.version) as target:
+    # Scan source package, replacing entries with the patched versions if present
+    for entry in source:
+      if entry.name in patch_entries:
+        # Write the entry from the patches
+        logger(f&#39;Applying patch to entry {entry.name}&#39;)
+        target.write_entry_with_manifest(patch_entries.pop(entry.name))
+      else:
+        # No matching entry in patches, so just write the original entry
+        logger(f&#39;No patch for entry {entry.name}, using original entry&#39;)
+        target.write_entry_with_manifest(entry)
+
+    # Append any entries in patches that weren&#39;t in the source
+    for entry in patch_entries.values():
+      logger(f&#39;Appending entry {entry.name}&#39;)
+      target.write_entry_with_manifest(entry)
+        
+  # Delete the old files
+  os.remove(package_old_path)
+  os.remove(manifest_old_path)
+
+def _load_manifest_entry(filename):
   if filename.endswith(&#34;.atlas.json&#34;):
     entry = AtlasEntry()
     entry.import_file(filename)
     return entry
   else:
     raise NotImplementedError(&#39;Unsupported manifest file type&#39;)
- </code></pre>
+
+def _entry_match(patterns, entry):
+  if patterns is None or len(patterns) == 0:
+    return True
+  else:
+    for pattern in patterns:
+      if fnmatch.fnmatch(entry.short_name(), pattern):
+        return True
+  return False</code></pre>
 </details>
 </section>
 <section>
@@ -184,27 +184,8 @@ def load_manifest_entry(filename):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="deppth.deppth.entry_match"><code class="name flex">
-<span>def <span class="ident">entry_match</span></span>(<span>patterns, entry)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def entry_match(patterns, entry):
-  if patterns is None or len(patterns) == 0:
-    return True
-  else:
-    for pattern in patterns:
-      if fnmatch.fnmatch(entry.short_name(), pattern):
-        return True
-  return False</code></pre>
-</details>
-</dd>
 <dt id="deppth.deppth.extract"><code class="name flex">
-<span>def <span class="ident">extract</span></span>(<span>args)</span>
+<span>def <span class="ident">extract</span></span>(<span>package, target_dir, *entries, subtextures=False, logger=&lt;function &lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -212,46 +193,45 @@ def load_manifest_entry(filename):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def extract(args):
-  source = args.source
-  target = args.target
-  entries = args.entries
-  subtextures = args.subtextures
+<pre><code class="python">def extract(package, target_dir, *entries, subtextures=False, logger=lambda s: None):
   includes = []
 
-  if len(target) == 0:
-    target = source
+  if len(target_dir) == 0:
+    target_dir = os.path.splitext(package)[0]
 
-  os.makedirs(target, exist_ok=True)
-  with PackageWithManifestReader(source) as f:
+  os.makedirs(target_dir, exist_ok=True)
+  with PackageWithManifestReader(package) as f:
     if f.manifest is None and subtextures:
-      print(&#39;Exporting subtextures requires a manifest. --subtextures flag ignored&#39;)
+      logger(&#39;Exporting subtextures requires a manifest. --subtextures flag ignored&#39;)
       subtextures=False
 
     for entry in f:
-      if not entry_match(entries, entry):
+      if not _entry_match(entries, entry):
         continue
 
-      entry.extract(target, subtextures=subtextures)
+      logger(f&#39;Extracting entry {entry.name}&#39;)
+      entry.extract(target_dir, subtextures=subtextures)
 
     if not f.manifest is None:
       for entry in f.manifest.values():
-        if not entry_match(entries, entry):
+        if not _entry_match(entries, entry):
           continue
-
-        entry.extract(target, subtextures=subtextures, includes=includes)
+        
+        logger(f&#39;Extracting manifest entry {entry.name}&#39;)
+        entry.extract(target_dir, subtextures=subtextures, includes=includes)
 
     if len(includes) &gt; 0:
-      include_dir = os.path.join(target, &#39;manifest&#39;)
+      include_dir = os.path.join(target_dir, &#39;manifest&#39;)
       os.makedirs(include_dir, exist_ok=True)
       with open(os.path.join(include_dir, &#39;includes.txt&#39;), &#39;w&#39;) as inc_f:
+        logger(f&#39;Writing includes to {inc_f.name}&#39;)
         for include in includes:
           inc_f.write(include)
           inc_f.write(&#39;\n&#39;)</code></pre>
 </details>
 </dd>
-<dt id="deppth.deppth.load_manifest_entry"><code class="name flex">
-<span>def <span class="ident">load_manifest_entry</span></span>(<span>filename)</span>
+<dt id="deppth.deppth.list_contents"><code class="name flex">
+<span>def <span class="ident">list_contents</span></span>(<span>name, *patterns, logger=&lt;function &lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -259,54 +239,23 @@ def load_manifest_entry(filename):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def load_manifest_entry(filename):
-  if filename.endswith(&#34;.atlas.json&#34;):
-    entry = AtlasEntry()
-    entry.import_file(filename)
-    return entry
-  else:
-    raise NotImplementedError(&#39;Unsupported manifest file type&#39;)</code></pre>
-</details>
-</dd>
-<dt id="deppth.deppth.main"><code class="name flex">
-<span>def <span class="ident">main</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def main():
-  parser = argparse.ArgumentParser(prog=&#39;deppth&#39;, description=&#39;Decompress, Extract, Pack for Pyre, Transistor, and Hades&#39;)
-  subparsers = parser.add_subparsers(help=&#39;The action to perform&#39;, dest=&#39;action&#39;)
+<pre><code class="python">def list_contents(name, *patterns, logger=lambda s: None):
+  with PackageWithManifestReader(name) as f:
+    for entry in f:
+      if not _entry_match(patterns, entry):
+        continue
+      
+      logger(f&#39;{entry.name}&#39;)
 
-  # List parser
-  list_parser = subparsers.add_parser(&#39;list&#39;, help=&#39;List the entries of a package&#39;, aliases=[&#39;ls&#39;])
-  list_parser.add_argument(&#39;path&#39;, metavar=&#39;path&#39;, type=str, help=&#39;The path to the package to act on&#39;)
-  list_parser.add_argument(&#39;patterns&#39;, metavar=&#39;patterns&#39;, nargs=&#39;*&#39;, help=&#39;Patterns to search for&#39;)
-  list_parser.set_defaults(func=plist)
-
-  # Extract parser
-  extract_parser = subparsers.add_parser(&#39;extract&#39;, help=&#39;Extract assets from a package&#39;, aliases=[&#39;ex&#39;])
-  extract_parser.add_argument(&#39;source&#39;, metavar=&#39;source&#39;, type=str, help=&#39;The path to extract&#39;)
-  extract_parser.add_argument(&#39;-t&#39;, &#39;--target&#39;, metavar=&#39;target&#39;, default=&#39;&#39;, help=&#39;Where to extract the package&#39;)
-  extract_parser.add_argument(&#39;-e&#39;, &#39;--entries&#39;, nargs=&#39;*&#39;, metavar=&#39;entry&#39;, help=&#39;One or more entry names to extract&#39;)
-  extract_parser.add_argument(&#39;-s&#39;, &#39;--subtextures&#39;, action=&#39;store_true&#39;, default=False, help=&#39;Export subtextures instead of full atlases&#39;)
-  extract_parser.set_defaults(func=extract)
-
-  # Pack parser
-  pack_parser = subparsers.add_parser(&#39;pack&#39;, help=&#39;Pack assets into a package&#39;, aliases=[&#39;pk&#39;])
-  pack_parser.add_argument(&#39;-s&#39;, &#39;--source&#39;, metavar=&#39;source&#39;, default=&#39;&#39;, type=str, help=&#39;Path to the folder to pack, default is current folder&#39;)
-  pack_parser.add_argument(&#39;-t&#39;, &#39;--target&#39;, metavar=&#39;target&#39;, default=&#39;&#39;, help=&#39;Path of output file&#39;)
-  pack_parser.set_defaults(func=pack)
-
-  args = parser.parse_args()
-  args.func(args)</code></pre>
+      atlas = entry.manifest_entry
+      if atlas and hasattr(atlas, &#39;subAtlases&#39;):
+        for subatlas in atlas.subAtlases:
+          subname = subatlas[&#39;name&#39;]
+          logger(f&#39;  {subname}&#39;)</code></pre>
 </details>
 </dd>
 <dt id="deppth.deppth.pack"><code class="name flex">
-<span>def <span class="ident">pack</span></span>(<span>args)</span>
+<span>def <span class="ident">pack</span></span>(<span>source_dir, package, *entries, logger=&lt;function &lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -314,24 +263,25 @@ def load_manifest_entry(filename):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def pack(args):
+<pre><code class="python">def pack(source_dir, package, *entries, logger=lambda s: None):
   curdir = os.getcwd()
-  source = os.path.join(curdir, args.source)
-  target = args.target
-  #entries = args.entries
+  source = os.path.join(curdir, source_dir)
+  target = package
 
   if len(target) == 0:
     target = f&#39;{os.path.basename(source)}.pkg&#39;
 
-  print(f&#39;Packing {source} to target package {target}&#39;)
+  logger(f&#39;Packing {source} to target package {target}&#39;)
 
   manifest_dir = os.path.join(source, &#39;manifest&#39;)
   manifest_entries = []
-  print(&#39;Scanning Manifest&#39;)
+  logger(&#39;Scanning Manifest&#39;)
   for filename in os.listdir(manifest_dir):
     if filename.endswith(&#39;.json&#39;):
-      entry = load_manifest_entry(os.path.join(manifest_dir, filename))
-      print(entry.name)
+      entry = _load_manifest_entry(os.path.join(manifest_dir, filename))
+      if not _entry_match(entries, entry):
+        continue
+      logger(entry.name)
       manifest_entries.append(entry)
   
   with PackageWriter(target, compressor=&#39;lz4&#39;) as pkg_writer, PackageWriter(f&#39;{target}_manifest&#39;) as manifest_writer:
@@ -339,18 +289,18 @@ def load_manifest_entry(filename):
       entry_name = manifest_entry.name.split(&#39;\\&#39;)[-1]
       entry_sheet_path = os.path.join(source, &#39;textures&#39;, &#39;atlases&#39;, f&#39;{entry_name}.png&#39;)
       if os.path.exists(entry_sheet_path):
-        print(f&#39;Packing {entry_sheet_path}&#39;)
+        logger(f&#39;Packing {entry_sheet_path}&#39;)
         manifest_writer.write_entry(manifest_entry)
         texture_entry = TextureEntry()
         texture_entry.name = manifest_entry.referencedTextureName
         texture_entry.import_file(entry_sheet_path)
         pkg_writer.write_entry(texture_entry)
       else:
-        print(f&#39;Could not find atlas image for {entry_name}. Entry will be skipped.&#39;)</code></pre>
+        logger(f&#39;Could not find atlas image for {entry_name}. Entry will be skipped.&#39;)</code></pre>
 </details>
 </dd>
-<dt id="deppth.deppth.plist"><code class="name flex">
-<span>def <span class="ident">plist</span></span>(<span>args)</span>
+<dt id="deppth.deppth.patch"><code class="name flex">
+<span>def <span class="ident">patch</span></span>(<span>name, *patches, logger=&lt;function &lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -358,26 +308,41 @@ def load_manifest_entry(filename):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def plist(args):
-  path = args.path
-  patterns = args.patterns
+<pre><code class="python">def patch(name, *patches, logger=lambda s : None):
+  # Rename existing package/manifest so we can edit in place
+  package_old_path = f&#39;{name}.old&#39;
+  os.replace(name, package_old_path)
+  manifest_path = f&#39;{name}_manifest&#39;
+  manifest_old_path = f&#39;{package_old_path}_manifest&#39;
+  os.replace(manifest_path, manifest_old_path)
 
-  if not os.path.exists(path + &#39;.pkg&#39;):
-    print(&#39;Error: Specified package does not exist&#39;)
-    return
+  # Get the entries to replace in the package from the patches
+  patch_entries = {}
+  for patch in patches:
+    for entry in PackageWithManifestReader(patch):
+      patch_entries[entry.name] = entry
 
-  with PackageWithManifestReader(path) as f:
-    for entry in f:
-      if not entry_match(patterns, entry):
-        continue
-      
-      print(f&#39;{entry.name}&#39;)
+  # Open the old package for reading and a new package for writing
+  with PackageWithManifestReader(package_old_path) as source, PackageWithManifestWriter(name, compressor=source.compressor, version=source.version) as target:
+    # Scan source package, replacing entries with the patched versions if present
+    for entry in source:
+      if entry.name in patch_entries:
+        # Write the entry from the patches
+        logger(f&#39;Applying patch to entry {entry.name}&#39;)
+        target.write_entry_with_manifest(patch_entries.pop(entry.name))
+      else:
+        # No matching entry in patches, so just write the original entry
+        logger(f&#39;No patch for entry {entry.name}, using original entry&#39;)
+        target.write_entry_with_manifest(entry)
 
-      atlas = entry.manifest_entry
-      if atlas and hasattr(atlas, &#39;subAtlases&#39;):
-        for subatlas in atlas.subAtlases:
-          subname = subatlas[&#39;name&#39;]
-          print(f&#39;  {subname}&#39;)</code></pre>
+    # Append any entries in patches that weren&#39;t in the source
+    for entry in patch_entries.values():
+      logger(f&#39;Appending entry {entry.name}&#39;)
+      target.write_entry_with_manifest(entry)
+        
+  # Delete the old files
+  os.remove(package_old_path)
+  os.remove(manifest_old_path)</code></pre>
 </details>
 </dd>
 </dl>
@@ -397,13 +362,11 @@ def load_manifest_entry(filename):
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="two-column">
-<li><code><a title="deppth.deppth.entry_match" href="#deppth.deppth.entry_match">entry_match</a></code></li>
+<ul class="">
 <li><code><a title="deppth.deppth.extract" href="#deppth.deppth.extract">extract</a></code></li>
-<li><code><a title="deppth.deppth.load_manifest_entry" href="#deppth.deppth.load_manifest_entry">load_manifest_entry</a></code></li>
-<li><code><a title="deppth.deppth.main" href="#deppth.deppth.main">main</a></code></li>
+<li><code><a title="deppth.deppth.list_contents" href="#deppth.deppth.list_contents">list_contents</a></code></li>
 <li><code><a title="deppth.deppth.pack" href="#deppth.deppth.pack">pack</a></code></li>
-<li><code><a title="deppth.deppth.plist" href="#deppth.deppth.plist">plist</a></code></li>
+<li><code><a title="deppth.deppth.patch" href="#deppth.deppth.patch">patch</a></code></li>
 </ul>
 </li>
 </ul>

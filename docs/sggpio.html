@@ -28,8 +28,9 @@
 </summary>
 <pre><code class="python">import io
 import os
+import fnmatch
 
-from .compression import get_chunkprocessor, get_chunkprocessor_by_name
+from .compression import get_chunkprocessor, get_chunkprocessor_by_name, validate_compressor_name
 from .utils import IOExtensionMixin as _IOExtensionMixin, FileIO as _FileIO, BytesIO as _BytesIO
 from .entries import get_entry, import_entry
 
@@ -39,6 +40,7 @@ CHUNK_SIZE = 0x2000000              # The size of uncompressed chunks in package
 PACKAGE_VERSION_HADES = 7
 PACKAGE_VERSION_TRANSISTOR = 5
 PACKAGE_VERSION_PYRE = 5
+PACKAGE_VERSIONS = [PACKAGE_VERSION_HADES, PACKAGE_VERSION_PYRE, PACKAGE_VERSION_TRANSISTOR]
 
 ENTRY_CODE_END_OF_CHUNK = b&#39;\xBE&#39;
 ENTRY_CODE_END_OF_FILE = b&#39;\xFF&#39;
@@ -563,10 +565,10 @@ class PackageWriter(PackageIO):
 
 
 class PackageWithManifestReader(PackageReader):
-  def __init__(self, name, closefd=True, opener=None, is_manifest=False):
-    super().__init__(f&#39;{name}.pkg&#39;, closefd, opener, is_manifest)
-    if os.path.exists(f&#39;{name}.pkg_manifest&#39;):
-      self.manifest = PackageReader.load_package(f&#39;{name}.pkg_manifest&#39;)
+  def __init__(self, name, closefd=True, opener=None):
+    super().__init__(f&#39;{name}&#39;, closefd, opener)
+    if os.path.exists(f&#39;{name}_manifest&#39;):
+      self.manifest = PackageReader.load_package(f&#39;{name}_manifest&#39;, True)
     else:
       self.manifest = None
 
@@ -579,7 +581,90 @@ class PackageWithManifestReader(PackageReader):
     if self.manifest is not None and entry.name in self.manifest:
       entry.manifest_entry = self.manifest[entry.name]
 
-    return entry</code></pre>
+    return entry
+
+class PackageWithManifestWriter(PackageWriter):
+  def __init__(self, name, closefd=True, opener=None, compressor=&#39;uncompressed&#39;, version=PACKAGE_VERSION_HADES):
+    super().__init__(name, closefd, opener, compressor, version)
+    manifest_name = f&#39;{name}_manifest&#39;
+    self.manifest = PackageWriter(manifest_name, closefd, opener, version=version, is_manifest=True)
+
+  def write_entry_with_manifest(self, entry):
+    self.write_entry(entry)
+    if self.manifest is not None and hasattr(entry, &#39;manifest_entry&#39;):
+      self.manifest.write_entry(entry.manifest_entry)
+
+  def close(self):
+    super().close()
+    self.manifest.close()
+
+def patch(name, *patches, logger=lambda s : None):
+  # Rename existing package/manifest so we can edit in place
+  package_old_path = f&#39;{name}.old&#39;
+  os.replace(name, package_old_path)
+  manifest_path = f&#39;{name}_manifest&#39;
+  manifest_old_path = f&#39;{package_old_path}_manifest&#39;
+  os.replace(manifest_path, manifest_old_path)
+
+  # Get the entries to replace in the package from the patches
+  patch_entries = {}
+  for patch in patches:
+    for entry in PackageWithManifestReader(patch):
+      patch_entries[entry.name] = entry
+
+  # Open the old package for reading and a new package for writing
+  with PackageWithManifestReader(package_old_path) as source, PackageWithManifestWriter(name, compressor=source.compressor, version=source.version) as target:
+    # Scan source package, replacing entries with the patched versions if present
+    for entry in source:
+      if entry.name in patch_entries:
+        # Write the entry from the patches
+        logger(f&#39;Applying patch to entry {entry.name}&#39;)
+        target.write_entry_with_manifest(patch_entries.pop(entry.name))
+      else:
+        # No matching entry in patches, so just write the original entry
+        logger(f&#39;No patch for entry {entry.name}, using original entry&#39;)
+        target.write_entry_with_manifest(entry)
+
+    # Append any entries in patches that weren&#39;t in the source
+    for entry in patch_entries.values():
+      logger(f&#39;Appending entry {entry.name}&#39;)
+      target.write_entry_with_manifest(entry)
+        
+  # Delete the old files
+  os.remove(package_old_path)
+  os.remove(manifest_old_path)
+
+def load_package(name):
+  &#34;&#34;&#34;Loads the entire contents of the package given by name and returns an array of entries.&#34;&#34;&#34;
+  is_manifest = name.endswith(&#39;_manifest&#39;)
+  return PackageReader.load_package(name, is_manifest)
+
+def open_package(name, mode, closefd=True, opener=None, compressor=&#39;lz4&#39;, version=PACKAGE_VERSION_HADES):
+  &#34;&#34;&#34;Opens the package with base filename given by name. 
+  
+  mode - Valid modes are &#39;r&#39;, &#39;w&#39;, &#39;rm&#39;, and &#39;wm&#39;. R for Read, W for Write, M for include Manifest.
+  closefd, opener - Similar to the same parameters on os.open
+
+  These parameters are only used for writing; if reading the values are inferred from the package data:
+  compressor - Compression to use on the package. Valid values are &#39;uncompressed&#39;, &#39;lz4&#39;, and &#39;lzf&#39;
+  version - Should be a PACKAGE_VERSION_* constant depending on the game (7 if Hades, 5 otherwise)
+  &#34;&#34;&#34;
+  if not validate_compressor_name(compressor):
+    raise ValueError(f&#39;Invalid compressor: {compressor}&#39;)
+
+  if not version in PACKAGE_VERSIONS:
+    raise ValueError(f&#39;Invalid version: {version}&#39;)
+
+  if mode == &#39;r&#39;:
+    return PackageReader(name, closefd=closefd, opener=opener)
+  elif mode == &#39;w&#39;:
+    return PackageWriter(name, closefd=closefd, opener=opener, compressor=compressor, version=version)
+  elif mode == &#39;rm&#39;:
+    return PackageWithManifestReader(name, closefd=closefd, opener=opener)
+  elif mode == &#39;wm&#39;:
+    return PackageWithManifestWriter(name, closefd=closefd, opener=opener, compressor=compressor, version=version)
+  else:
+    raise ValueError(f&#39;Invalid mode: {mode}&#39;)</code></pre>
 </details>
 </section>
 <section>
@@ -587,6 +672,112 @@ class PackageWithManifestReader(PackageReader):
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="deppth.sggpio.load_package"><code class="name flex">
+<span>def <span class="ident">load_package</span></span>(<span>name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Loads the entire contents of the package given by name and returns an array of entries.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_package(name):
+  &#34;&#34;&#34;Loads the entire contents of the package given by name and returns an array of entries.&#34;&#34;&#34;
+  is_manifest = name.endswith(&#39;_manifest&#39;)
+  return PackageReader.load_package(name, is_manifest)</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.open_package"><code class="name flex">
+<span>def <span class="ident">open_package</span></span>(<span>name, mode, closefd=True, opener=None, compressor='lz4', version=7)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Opens the package with base filename given by name. </p>
+<p>mode - Valid modes are 'r', 'w', 'rm', and 'wm'. R for Read, W for Write, M for include Manifest.
+closefd, opener - Similar to the same parameters on os.open</p>
+<p>These parameters are only used for writing; if reading the values are inferred from the package data:
+compressor - Compression to use on the package. Valid values are 'uncompressed', 'lz4', and 'lzf'
+version - Should be a PACKAGE_VERSION_* constant depending on the game (7 if Hades, 5 otherwise)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def open_package(name, mode, closefd=True, opener=None, compressor=&#39;lz4&#39;, version=PACKAGE_VERSION_HADES):
+  &#34;&#34;&#34;Opens the package with base filename given by name. 
+  
+  mode - Valid modes are &#39;r&#39;, &#39;w&#39;, &#39;rm&#39;, and &#39;wm&#39;. R for Read, W for Write, M for include Manifest.
+  closefd, opener - Similar to the same parameters on os.open
+
+  These parameters are only used for writing; if reading the values are inferred from the package data:
+  compressor - Compression to use on the package. Valid values are &#39;uncompressed&#39;, &#39;lz4&#39;, and &#39;lzf&#39;
+  version - Should be a PACKAGE_VERSION_* constant depending on the game (7 if Hades, 5 otherwise)
+  &#34;&#34;&#34;
+  if not validate_compressor_name(compressor):
+    raise ValueError(f&#39;Invalid compressor: {compressor}&#39;)
+
+  if not version in PACKAGE_VERSIONS:
+    raise ValueError(f&#39;Invalid version: {version}&#39;)
+
+  if mode == &#39;r&#39;:
+    return PackageReader(name, closefd=closefd, opener=opener)
+  elif mode == &#39;w&#39;:
+    return PackageWriter(name, closefd=closefd, opener=opener, compressor=compressor, version=version)
+  elif mode == &#39;rm&#39;:
+    return PackageWithManifestReader(name, closefd=closefd, opener=opener)
+  elif mode == &#39;wm&#39;:
+    return PackageWithManifestWriter(name, closefd=closefd, opener=opener, compressor=compressor, version=version)
+  else:
+    raise ValueError(f&#39;Invalid mode: {mode}&#39;)</code></pre>
+</details>
+</dd>
+<dt id="deppth.sggpio.patch"><code class="name flex">
+<span>def <span class="ident">patch</span></span>(<span>name, *patches, logger=&lt;function &lt;lambda&gt;&gt;)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def patch(name, *patches, logger=lambda s : None):
+  # Rename existing package/manifest so we can edit in place
+  package_old_path = f&#39;{name}.old&#39;
+  os.replace(name, package_old_path)
+  manifest_path = f&#39;{name}_manifest&#39;
+  manifest_old_path = f&#39;{package_old_path}_manifest&#39;
+  os.replace(manifest_path, manifest_old_path)
+
+  # Get the entries to replace in the package from the patches
+  patch_entries = {}
+  for patch in patches:
+    for entry in PackageWithManifestReader(patch):
+      patch_entries[entry.name] = entry
+
+  # Open the old package for reading and a new package for writing
+  with PackageWithManifestReader(package_old_path) as source, PackageWithManifestWriter(name, compressor=source.compressor, version=source.version) as target:
+    # Scan source package, replacing entries with the patched versions if present
+    for entry in source:
+      if entry.name in patch_entries:
+        # Write the entry from the patches
+        logger(f&#39;Applying patch to entry {entry.name}&#39;)
+        target.write_entry_with_manifest(patch_entries.pop(entry.name))
+      else:
+        # No matching entry in patches, so just write the original entry
+        logger(f&#39;No patch for entry {entry.name}, using original entry&#39;)
+        target.write_entry_with_manifest(entry)
+
+    # Append any entries in patches that weren&#39;t in the source
+    for entry in patch_entries.values():
+      logger(f&#39;Appending entry {entry.name}&#39;)
+      target.write_entry_with_manifest(entry)
+        
+  # Delete the old files
+  os.remove(package_old_path)
+  os.remove(manifest_old_path)</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -1531,7 +1722,7 @@ of which being the fact that this stream utilizes a buffer.</p></div>
 </dd>
 <dt id="deppth.sggpio.PackageWithManifestReader"><code class="flex name class">
 <span>class <span class="ident">PackageWithManifestReader</span></span>
-<span>(</span><span>name, closefd=True, opener=None, is_manifest=False)</span>
+<span>(</span><span>name, closefd=True, opener=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base class for reading to and writing from SuperGiant Games asset packages.</p>
@@ -1554,10 +1745,10 @@ constants provide the correct values for this property</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class PackageWithManifestReader(PackageReader):
-  def __init__(self, name, closefd=True, opener=None, is_manifest=False):
-    super().__init__(f&#39;{name}.pkg&#39;, closefd, opener, is_manifest)
-    if os.path.exists(f&#39;{name}.pkg_manifest&#39;):
-      self.manifest = PackageReader.load_package(f&#39;{name}.pkg_manifest&#39;)
+  def __init__(self, name, closefd=True, opener=None):
+    super().__init__(f&#39;{name}&#39;, closefd, opener)
+    if os.path.exists(f&#39;{name}_manifest&#39;):
+      self.manifest = PackageReader.load_package(f&#39;{name}_manifest&#39;, True)
     else:
       self.manifest = None
 
@@ -1609,6 +1800,105 @@ constants provide the correct values for this property</p></div>
 <li><code><a title="deppth.sggpio.PackageReader.write_single" href="utils.html#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
 <li><code><a title="deppth.sggpio.PackageReader.write_string" href="utils.html#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
 <li><code><a title="deppth.sggpio.PackageReader.write_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="deppth.sggpio.PackageWithManifestWriter"><code class="flex name class">
+<span>class <span class="ident">PackageWithManifestWriter</span></span>
+<span>(</span><span>name, closefd=True, opener=None, compressor='uncompressed', version=7)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base class for reading to and writing from SuperGiant Games asset packages.</p>
+<p>You almost never should instantiate this directly nor any subclass, but
+instead should use the open_package function, which will return the correct
+subclass.</p>
+<p>This class implements the IOBase interface, so typical IO patterns should
+readily be familiar. As such, documentation will be omitted for members
+that behave like any standard IO object.</p>
+<p>Creates an instance of PackageIO, opening a stream to read the package.</p>
+<p>The name, mode, closefd, and opener properties match those from io.open.</p>
+<p>The compressor property indicates the type of compression used in the package.
+Because this class cannot read or write data, the user must specify. The possible
+values are 'uncompressed', 'lz4' and 'lzf'. LZ4 and LZF compression require the
+lz4 and lzf modules, respectively.</p>
+<p>The version property indicates the version number of the package. The PACKAGE_VERSION_*
+constants provide the correct values for this property</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PackageWithManifestWriter(PackageWriter):
+  def __init__(self, name, closefd=True, opener=None, compressor=&#39;uncompressed&#39;, version=PACKAGE_VERSION_HADES):
+    super().__init__(name, closefd, opener, compressor, version)
+    manifest_name = f&#39;{name}_manifest&#39;
+    self.manifest = PackageWriter(manifest_name, closefd, opener, version=version, is_manifest=True)
+
+  def write_entry_with_manifest(self, entry):
+    self.write_entry(entry)
+    if self.manifest is not None and hasattr(entry, &#39;manifest_entry&#39;):
+      self.manifest.write_entry(entry.manifest_entry)
+
+  def close(self):
+    super().close()
+    self.manifest.close()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="deppth.sggpio.PackageWriter" href="#deppth.sggpio.PackageWriter">PackageWriter</a></li>
+<li><a title="deppth.sggpio.PackageIO" href="#deppth.sggpio.PackageIO">PackageIO</a></li>
+<li>io.IOBase</li>
+<li>_io._IOBase</li>
+<li><a title="deppth.utils.IOExtensionMixin" href="utils.html#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="deppth.sggpio.PackageWithManifestWriter.write_entry_with_manifest"><code class="name flex">
+<span>def <span class="ident">write_entry_with_manifest</span></span>(<span>self, entry)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_entry_with_manifest(self, entry):
+  self.write_entry(entry)
+  if self.manifest is not None and hasattr(entry, &#39;manifest_entry&#39;):
+    self.manifest.write_entry(entry.manifest_entry)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="deppth.sggpio.PackageWriter" href="#deppth.sggpio.PackageWriter">PackageWriter</a></b></code>:
+<ul class="hlist">
+<li><code><a title="deppth.sggpio.PackageWriter.close" href="#deppth.sggpio.PackageIO.close">close</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.fileno" href="#deppth.sggpio.PackageIO.fileno">fileno</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.flush" href="#deppth.sggpio.PackageIO.flush">flush</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.is_eof" href="#deppth.sggpio.PackageIO.is_eof">is_eof</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.isatty" href="#deppth.sggpio.PackageIO.isatty">isatty</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.read" href="#deppth.sggpio.PackageIO.read">read</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.read_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.read_7bit_encoded_int">read_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.read_big_string" href="utils.html#deppth.utils.IOExtensionMixin.read_big_string">read_big_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.read_entry" href="#deppth.sggpio.PackageIO.read_entry">read_entry</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.read_int" href="utils.html#deppth.utils.IOExtensionMixin.read_int">read_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.read_single" href="utils.html#deppth.utils.IOExtensionMixin.read_single">read_single</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.read_string" href="utils.html#deppth.utils.IOExtensionMixin.read_string">read_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.read_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.read_string_7b">read_string_7b</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.readable" href="#deppth.sggpio.PackageIO.readable">readable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.seek" href="#deppth.sggpio.PackageIO.seek">seek</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.seekable" href="#deppth.sggpio.PackageWriter.seekable">seekable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.tell" href="#deppth.sggpio.PackageIO.tell">tell</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.truncate" href="#deppth.sggpio.PackageIO.truncate">truncate</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.writable" href="#deppth.sggpio.PackageIO.writable">writable</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.write" href="#deppth.sggpio.PackageIO.write">write</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.write_7bit_encoded_int" href="utils.html#deppth.utils.IOExtensionMixin.write_7bit_encoded_int">write_7bit_encoded_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.write_big_string" href="utils.html#deppth.utils.IOExtensionMixin.write_big_string">write_big_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.write_int" href="utils.html#deppth.utils.IOExtensionMixin.write_int">write_int</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.write_single" href="utils.html#deppth.utils.IOExtensionMixin.write_single">write_single</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.write_string" href="utils.html#deppth.utils.IOExtensionMixin.write_string">write_string</a></code></li>
+<li><code><a title="deppth.sggpio.PackageWriter.write_string_7b" href="utils.html#deppth.utils.IOExtensionMixin.write_string_7b">write_string_7b</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1735,6 +2025,10 @@ constants provide the correct values for this property</p></div>
 <li>_io._IOBase</li>
 <li><a title="deppth.utils.IOExtensionMixin" href="utils.html#deppth.utils.IOExtensionMixin">IOExtensionMixin</a></li>
 </ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="deppth.sggpio.PackageWithManifestWriter" href="#deppth.sggpio.PackageWithManifestWriter">PackageWithManifestWriter</a></li>
+</ul>
 <h3>Methods</h3>
 <dl>
 <dt id="deppth.sggpio.PackageWriter.seekable"><code class="name flex">
@@ -1819,6 +2113,13 @@ This method may need to do a test seek().</p></div>
 <li><code><a title="deppth" href="index.html">deppth</a></code></li>
 </ul>
 </li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="deppth.sggpio.load_package" href="#deppth.sggpio.load_package">load_package</a></code></li>
+<li><code><a title="deppth.sggpio.open_package" href="#deppth.sggpio.open_package">open_package</a></code></li>
+<li><code><a title="deppth.sggpio.patch" href="#deppth.sggpio.patch">patch</a></code></li>
+</ul>
+</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
@@ -1850,6 +2151,12 @@ This method may need to do a test seek().</p></div>
 </li>
 <li>
 <h4><code><a title="deppth.sggpio.PackageWithManifestReader" href="#deppth.sggpio.PackageWithManifestReader">PackageWithManifestReader</a></code></h4>
+</li>
+<li>
+<h4><code><a title="deppth.sggpio.PackageWithManifestWriter" href="#deppth.sggpio.PackageWithManifestWriter">PackageWithManifestWriter</a></code></h4>
+<ul class="">
+<li><code><a title="deppth.sggpio.PackageWithManifestWriter.write_entry_with_manifest" href="#deppth.sggpio.PackageWithManifestWriter.write_entry_with_manifest">write_entry_with_manifest</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="deppth.sggpio.PackageWriter" href="#deppth.sggpio.PackageWriter">PackageWriter</a></code></h4>

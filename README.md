@@ -1,7 +1,7 @@
 ﻿# deppth
 Decompress, Extract, and Pack for Pyre, Transistor, and Hades.
 
-Deppth is a high-level I/O interface for package files in the games Transistor, Pyre, and Hades. Deppth itself is presented as a command-line interface for basic tasks like extraction. Contained within the Deppth package is the SGGPIO (SuperGiant Games Package IO) module, which is what programmers should use to interface with Deppth instead of programmatically running the CLI.
+Deppth is a high-level I/O interface for package files in the games Transistor, Pyre, and Hades. Deppth provides both command-line and programmer interfaces.
 
 ## Installation
 
@@ -17,68 +17,59 @@ Hades uses LZ4 compression on its packages. If you plan to work with these packa
 
 Transistor and Pyre both use LZF compression on their packages. If you plan to work with these packages, you'll want to install the LZF module: `pip install lzf`. You may need to install C++ build tools to get this dependency to install correctly.
 
-## Command-line Usage
+## CLI Quick-Start
 
-Installing Deppth should make it available at a command prompt. Navigate to a Packages directory in one of the supported games and then run one or more of these commands:
+Let's say we want to edit a spritesheet in Launch.pkg. First, we'll want to **extract** the package to get the individual assets out.
 
-### List (ls)
+    deppth ex Launch.pkg
 
-    deppth list pkg_path [patterns]
-Lists the contents of the package. This can be used to filter down other calls to target only the entries of the package you're interested in.
+This will create a folder called Launch in the current working directory. The texture atlases will be in the textures/atlases directory within there.
 
-If a package contains sprite sheets, which most do, then the subtexture names will also be displayed
+Let's say I edit Launch_Textures02.png. Now, to rebuild the package, I'll want to **pack** this folder into a package again.
 
-*pkg_path*: Should be a path to the package, without the .pkg extension.
-*patterns*: Only the entries matching the pattern will be displayed. Currently, this won't apply to the subtextures, however.
+    deppth pk -s Launch -t Launch.pkg
 
-Example usage:
+If I then replace the package file in the game files with this package file, it should use my updated asset. But, suppose I'm trying to distribute a mod. I probably only want to distribute my change to the package, not the entire package. In that case, you probably want to build a patch for someone else to apply.
 
-    C:\Program Files (x86)\Steam\steamapps\common\Hades\Content\Win\Packages>deppth ls ZeusUpgrade *Nova02
-    bin\Win\Atlases\ZeusUpgrade_ZeusLightningStrikeGroundNova02
-    Fx\BoonDissipateA\BoonDissipateA0007
-    Fx\BoonDissipateA\BoonDissipateA0017
-    Fx\BoonDissipateA\BoonDissipateA0016
-    Fx\BoonDissipateArrow\AresWrathArrow0013
-    Fx\BoonDissipateA\BoonDissipateA0005
-    Fx\BoonDissipateA\BoonDissipateA0014
-    Fx\BoonDissipateA\BoonDissipateA0015
-### Extract (ex)
+To do this, you can use the **pack** command with the **entries** flag to only include any items you changed (this works similar to patterns in other CLI tools).
 
-    deppth extract [-t target] [-e entries] [-s] pkg_path
+    deppth pk -s Launch -t Launch_patch.pkg -e *Launch_Textures02*
 
-Extracts the contents of a package.
+I can then distribute Launch_patch.pkg and Launch_patch.pkg_manifest. To apply this patch to the actual package, one would need to place these files in the same folder and then use the **patch** command to perform the patching. 
 
-*pkg_path*: Should be a path to the package, without the .pkg extension.
-*target*: Where to extract the package. By default, will create a folder in the current folder with the same name as the package.
-*entries*: One or more patterns to filter which entries get extracted. This filter is currently applied only to the entry names, not subtexture names.
-*--subtextures*: If this flag is passed, subtextures of sprite sheets will be exported. By default, entire sprite sheets will be exported.
+     deppth pt Launch.pkg Launch_patch.pkg
 
-The extraction process will create a folder with one or more subfolders containing the contents:
+This will replace any entries in the package with any matching entries in the patches and append any new entries in the patches. More than one patch can be applied at a time (later ones take precedence if there are conflicts).
 
- - manifest: This folder contains metadata on the contents, such as which rectangles in a sprite sheet represent individual sprites.
- - textures: Sprites and 3D-textures will be exported here
- - spines: Pyre has some assets created by Spine. Those will be exported here.
- - bink_refs: This file contains references to bink files (not the actual bink files, those are elsewhere in the game structure).
+ ## Deppth API
 
-These folders may contain subfolders organizing the output. I recommend just trying this out and taking a look yourself.
+The Deppth module exposes functions that perform the actions described above, plus a fourth (which is also part of the CLI) to list the contents of a package. It's basically just a programmer interface for the same things the CLI does -- the latter is just a wrapper for the former.
 
-    deppth ex ZeusUpgrade -s
+    list_contents(name, *patterns, logger=lambda  s: None)
+    extract(package, target_dir, *entries, subtextures=False, logger=lambda  s: None)
+    pack(source_dir, package, *entries, logger=lambda  s: None)
+    patch(name, *patches, logger=lambda  s : None)
 
-### Pack (pk)
+The logger kwarg allows for customization of output of these functions -- for example, you may want to write to a file instead of print to screen.
 
-    deppth pack -s source_dir -t pkg_path
+## SGGPIO
 
-Packs a directory into a package.
+The SGGPIO module is a lower-level interface for working with packages. The aim is to provide IO-esque streams to read and write package data. Most users won't need this, but for certain applications, using it could lead to better performance or more customizable behavior.
 
-*source_dir*: The path to a folder containing the output of a previous extract
-*pkg_path*: File to create. Should include the .pkg extension. Will also create a .pkg_manifest to go with it
+SGGPIO exports two functions, which really just wrap functionality in a variety of reader and writer classes. I recommend reading the docs on these classes if you're interested, but basic usage looks something like this.
 
-The idea would be to run extract, then edit the files, then run pack on the folder created by extract.
+    from deppth import sggpio
 
- ## SGGPIO
-
-The public interface for this is not quite ready for consumption yet, so this space is mostly blank for now. I'm working on it, I promise! In the meantime, check out the source code and documentation (download the docs folder and open sggpio.html in a browser) for an idea of what this can do.
-
+    # Copy Launch.pkg and corresponding manifest
+    with sggpio.open_package('Launch.pkg', 'rm') as pkg:
+	    with sggpio.open_package('Launch_copy.pkg', 'wm') as pkg_out:
+		    for entry in pkg:
+			    pkg_out.write_entry_with_manifest(entry)
+	
+	# Print manifest contents of copy to verify success
+	with sggpio.open_package('Launch_copy.pkg', 'rm') as pkg:
+		for entry in pkg.manifest:
+			print(entry)
 
     
 

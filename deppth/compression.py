@@ -28,6 +28,9 @@ def chunkprocessor(typeName, typeCode):
     return class_wrapper
   return decorate_entry
 
+def validate_compressor_name(name):
+  return name in _chunk_processors_by_name
+
 def get_chunkprocessor_by_name(name):
   return _chunk_processors_by_name[name]()
 
@@ -171,7 +174,7 @@ class _Lz4ChunkProcessor(_CompressedChunkProcessor):
   """
   def compress(self, chunk):
     """Compresses a block of data using LZ4 compression."""
-    return lz4.block.compress(chunk, store_size=False)
+    return lz4.block.compress(chunk, mode='high_compression', store_size=False)
 
   def decompress(self, chunk, chunk_size):
     """Decompresses an LZ4-compressed block of data, zero-filling to chunk_size."""

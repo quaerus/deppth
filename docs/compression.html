@@ -56,6 +56,9 @@ def chunkprocessor(typeName, typeCode):
     return class_wrapper
   return decorate_entry
 
+def validate_compressor_name(name):
+  return name in _chunk_processors_by_name
+
 def get_chunkprocessor_by_name(name):
   return _chunk_processors_by_name[name]()
 
@@ -199,7 +202,7 @@ class _Lz4ChunkProcessor(_CompressedChunkProcessor):
   &#34;&#34;&#34;
   def compress(self, chunk):
     &#34;&#34;&#34;Compresses a block of data using LZ4 compression.&#34;&#34;&#34;
-    return lz4.block.compress(chunk, store_size=False)
+    return lz4.block.compress(chunk, mode=&#39;high_compression&#39;, store_size=False)
 
   def decompress(self, chunk, chunk_size):
     &#34;&#34;&#34;Decompresses an LZ4-compressed block of data, zero-filling to chunk_size.&#34;&#34;&#34;
@@ -305,6 +308,19 @@ the stream.</p></div>
   return _chunk_processors_by_name[name]()</code></pre>
 </details>
 </dd>
+<dt id="deppth.compression.validate_compressor_name"><code class="name flex">
+<span>def <span class="ident">validate_compressor_name</span></span>(<span>name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate_compressor_name(name):
+  return name in _chunk_processors_by_name</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -326,6 +342,7 @@ the stream.</p></div>
 <li><code><a title="deppth.compression.chunkprocessor" href="#deppth.compression.chunkprocessor">chunkprocessor</a></code></li>
 <li><code><a title="deppth.compression.get_chunkprocessor" href="#deppth.compression.get_chunkprocessor">get_chunkprocessor</a></code></li>
 <li><code><a title="deppth.compression.get_chunkprocessor_by_name" href="#deppth.compression.get_chunkprocessor_by_name">get_chunkprocessor_by_name</a></code></li>
+<li><code><a title="deppth.compression.validate_compressor_name" href="#deppth.compression.validate_compressor_name">validate_compressor_name</a></code></li>
 </ul>
 </li>
 </ul>

@@ -20,7 +20,7 @@ setup(
     name = "deppth",
     packages = ["deppth"],
     entry_points = {
-        "console_scripts": ['deppth = deppth.deppth:main']
+        "console_scripts": ['deppth = deppth.cli:main']
         },
     version = version,
     description = "Decompress, Extract, and Pack for Pyre, Transistor, and Hades",

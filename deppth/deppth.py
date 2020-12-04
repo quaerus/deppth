@@ -1,118 +1,83 @@
-"""Main entry point for the command-line interface"""
+"""Top-level API exposure of package actions"""
 
-__version__ = "0.0.3.0"
+__version__ = "0.1.0.0"
 
 import os
 import sys
-import argparse
 import fnmatch
 
-from .sggpio import PackageWithManifestReader, PackageReader, PackageWriter
+from .sggpio import PackageWithManifestReader, PackageWithManifestWriter, PackageReader, PackageWriter
 from .entries import AtlasEntry, TextureEntry
-
-def main():
-  parser = argparse.ArgumentParser(prog='deppth', description='Decompress, Extract, Pack for Pyre, Transistor, and Hades')
-  subparsers = parser.add_subparsers(help='The action to perform', dest='action')
-
-  # List parser
-  list_parser = subparsers.add_parser('list', help='List the entries of a package', aliases=['ls'])
-  list_parser.add_argument('path', metavar='path', type=str, help='The path to the package to act on')
-  list_parser.add_argument('patterns', metavar='patterns', nargs='*', help='Patterns to search for')
-  list_parser.set_defaults(func=plist)
-
-  # Extract parser
-  extract_parser = subparsers.add_parser('extract', help='Extract assets from a package', aliases=['ex'])
-  extract_parser.add_argument('source', metavar='source', type=str, help='The path to extract')
-  extract_parser.add_argument('-t', '--target', metavar='target', default='', help='Where to extract the package')
-  extract_parser.add_argument('-e', '--entries', nargs='*', metavar='entry', help='One or more entry names to extract')
-  extract_parser.add_argument('-s', '--subtextures', action='store_true', default=False, help='Export subtextures instead of full atlases')
-  extract_parser.set_defaults(func=extract)
-
-  # Pack parser
-  pack_parser = subparsers.add_parser('pack', help='Pack assets into a package', aliases=['pk'])
-  pack_parser.add_argument('-s', '--source', metavar='source', default='', type=str, help='Path to the folder to pack, default is current folder')
-  pack_parser.add_argument('-t', '--target', metavar='target', default='', help='Path of output file')
-  pack_parser.set_defaults(func=pack)
-
-  args = parser.parse_args()
-  args.func(args)
-
-def plist(args):
-  path = args.path
-  patterns = args.patterns
-
-  if not os.path.exists(path + '.pkg'):
-    print('Error: Specified package does not exist')
-    return
-
-  with PackageWithManifestReader(path) as f:
+ 
+def list_contents(name, *patterns, logger=lambda s: None):
+  with PackageWithManifestReader(name) as f:
     for entry in f:
-      if not entry_match(patterns, entry):
+      if not _entry_match(patterns, entry):
         continue
       
-      print(f'{entry.name}')
+      logger(f'{entry.name}')
 
       atlas = entry.manifest_entry
       if atlas and hasattr(atlas, 'subAtlases'):
         for subatlas in atlas.subAtlases:
           subname = subatlas['name']
-          print(f'  {subname}')
+          logger(f'  {subname}')
 
-def extract(args):
-  source = args.source
-  target = args.target
-  entries = args.entries
-  subtextures = args.subtextures
+def extract(package, target_dir, *entries, subtextures=False, logger=lambda s: None):
   includes = []
 
-  if len(target) == 0:
-    target = source
+  if len(target_dir) == 0:
+    target_dir = os.path.splitext(package)[0]
 
-  os.makedirs(target, exist_ok=True)
-  with PackageWithManifestReader(source) as f:
+  os.makedirs(target_dir, exist_ok=True)
+  with PackageWithManifestReader(package) as f:
     if f.manifest is None and subtextures:
-      print('Exporting subtextures requires a manifest. --subtextures flag ignored')
+      logger('Exporting subtextures requires a manifest. --subtextures flag ignored')
       subtextures=False
 
     for entry in f:
-      if not entry_match(entries, entry):
+      if not _entry_match(entries, entry):
         continue
 
-      entry.extract(target, subtextures=subtextures)
+      logger(f'Extracting entry {entry.name}')
+      entry.extract(target_dir, subtextures=subtextures)
 
     if not f.manifest is None:
       for entry in f.manifest.values():
-        if not entry_match(entries, entry):
+        if not _entry_match(entries, entry):
           continue
-
-        entry.extract(target, subtextures=subtextures, includes=includes)
+        
+        logger(f'Extracting manifest entry {entry.name}')
+        entry.extract(target_dir, subtextures=subtextures, includes=includes)
 
     if len(includes) > 0:
-      include_dir = os.path.join(target, 'manifest')
+      include_dir = os.path.join(target_dir, 'manifest')
       os.makedirs(include_dir, exist_ok=True)
       with open(os.path.join(include_dir, 'includes.txt'), 'w') as inc_f:
+        logger(f'Writing includes to {inc_f.name}')
         for include in includes:
           inc_f.write(include)
           inc_f.write('\n')
 
-def pack(args):
+def pack(source_dir, package, *entries, logger=lambda s: None):
   curdir = os.getcwd()
-  source = os.path.join(curdir, args.source)
-  target = args.target
-  #entries = args.entries
+  source = os.path.join(curdir, source_dir)
+  target = package
 
   if len(target) == 0:
     target = f'{os.path.basename(source)}.pkg'
 
-  print(f'Packing {source} to target package {target}')
+  logger(f'Packing {source} to target package {target}')
 
   manifest_dir = os.path.join(source, 'manifest')
   manifest_entries = []
-  print('Scanning Manifest')
+  logger('Scanning Manifest')
   for filename in os.listdir(manifest_dir):
     if filename.endswith('.json'):
-      entry = load_manifest_entry(os.path.join(manifest_dir, filename))
-      print(entry.name)
+      entry = _load_manifest_entry(os.path.join(manifest_dir, filename))
+      if not _entry_match(entries, entry):
+        continue
+      logger(entry.name)
       manifest_entries.append(entry)
   
   with PackageWriter(target, compressor='lz4') as pkg_writer, PackageWriter(f'{target}_manifest') as manifest_writer:
@@ -120,16 +85,60 @@ def pack(args):
       entry_name = manifest_entry.name.split('\\')[-1]
       entry_sheet_path = os.path.join(source, 'textures', 'atlases', f'{entry_name}.png')
       if os.path.exists(entry_sheet_path):
-        print(f'Packing {entry_sheet_path}')
+        logger(f'Packing {entry_sheet_path}')
         manifest_writer.write_entry(manifest_entry)
         texture_entry = TextureEntry()
         texture_entry.name = manifest_entry.referencedTextureName
         texture_entry.import_file(entry_sheet_path)
         pkg_writer.write_entry(texture_entry)
       else:
-        print(f'Could not find atlas image for {entry_name}. Entry will be skipped.')
+        logger(f'Could not find atlas image for {entry_name}. Entry will be skipped.')
 
-def entry_match(patterns, entry):
+def patch(name, *patches, logger=lambda s : None):
+  # Rename existing package/manifest so we can edit in place
+  package_old_path = f'{name}.old'
+  os.replace(name, package_old_path)
+  manifest_path = f'{name}_manifest'
+  manifest_old_path = f'{package_old_path}_manifest'
+  os.replace(manifest_path, manifest_old_path)
+
+  # Get the entries to replace in the package from the patches
+  patch_entries = {}
+  for patch in patches:
+    for entry in PackageWithManifestReader(patch):
+      patch_entries[entry.name] = entry
+
+  # Open the old package for reading and a new package for writing
+  with PackageWithManifestReader(package_old_path) as source, PackageWithManifestWriter(name, compressor=source.compressor, version=source.version) as target:
+    # Scan source package, replacing entries with the patched versions if present
+    for entry in source:
+      if entry.name in patch_entries:
+        # Write the entry from the patches
+        logger(f'Applying patch to entry {entry.name}')
+        target.write_entry_with_manifest(patch_entries.pop(entry.name))
+      else:
+        # No matching entry in patches, so just write the original entry
+        logger(f'No patch for entry {entry.name}, using original entry')
+        target.write_entry_with_manifest(entry)
+
+    # Append any entries in patches that weren't in the source
+    for entry in patch_entries.values():
+      logger(f'Appending entry {entry.name}')
+      target.write_entry_with_manifest(entry)
+        
+  # Delete the old files
+  os.remove(package_old_path)
+  os.remove(manifest_old_path)
+
+def _load_manifest_entry(filename):
+  if filename.endswith(".atlas.json"):
+    entry = AtlasEntry()
+    entry.import_file(filename)
+    return entry
+  else:
+    raise NotImplementedError('Unsupported manifest file type')
+
+def _entry_match(patterns, entry):
   if patterns is None or len(patterns) == 0:
     return True
   else:
@@ -137,12 +146,3 @@ def entry_match(patterns, entry):
       if fnmatch.fnmatch(entry.short_name(), pattern):
         return True
   return False
-
-def load_manifest_entry(filename):
-  if filename.endswith(".atlas.json"):
-    entry = AtlasEntry()
-    entry.import_file(filename)
-    return entry
-  else:
-    raise NotImplementedError('Unsupported manifest file type')
- 
